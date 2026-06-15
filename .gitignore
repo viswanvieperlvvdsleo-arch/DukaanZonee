@@ -1,0 +1,31 @@
+# Flutter / Dart generated
+**/.dart_tool/
+**/.packages
+**/.pub/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.pub-cache/
+**/build/
+
+# Node generated
+**/node_modules/
+npm-debug.log*
+
+# Local environment / secrets
+.env
+.env.*
+backend/.env
+
+# IDE / OS junk
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+.gradle-user-home/
+
+# CMake / native temp
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
