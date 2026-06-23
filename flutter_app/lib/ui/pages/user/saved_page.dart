@@ -268,7 +268,7 @@ class _SavedItemsTab extends StatelessWidget {
           child: _SavedItemCard(
             product: product,
             onUnsave: () => onUnsave(product),
-            onAddToCart: () => push(ctx, CheckoutPage(product: product)),
+            onAddToCart: () => openProductCheckout(ctx, product),
             onTap: () => push(ctx, ProductDetailPage(product: product)),
           ),
         );

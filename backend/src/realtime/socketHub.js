@@ -161,10 +161,18 @@ async function handleChatMessage(socket, payload) {
     createdAt: new Date().toISOString(),
   };
 
+  const access = await assertRealtimeRoomAccess(socket.user, event.roomId, {
+    scope: event.scope,
+    shopId: event.shopId,
+    targetUserId: payload.targetUserId?.toString() || null,
+  });
   const targetUserIds = new Set([socket.user.sub]);
   let shopSellerId = null;
   if (payload.targetUserId) {
     targetUserIds.add(payload.targetUserId.toString());
+  }
+  for (const participantId of access.participantIds) {
+    targetUserIds.add(participantId);
   }
 
   if (event.scope === 'b2b') {
@@ -173,21 +181,10 @@ async function handleChatMessage(socket, payload) {
     }
   }
 
-  const roomShopKey = shopKeyFromRoomId(event.roomId);
-
-  if (event.shopId || roomShopKey) {
-    const result = await query(
-      `SELECT id, seller_id
-       FROM shops
-       WHERE id = $1 OR LOWER(name) = LOWER($2)
-       LIMIT 1`,
-      [event.shopId, roomShopKey],
-    );
-    if (result.rows[0]?.seller_id) {
-      event.shopId = result.rows[0].id;
-      shopSellerId = result.rows[0].seller_id;
-      targetUserIds.add(shopSellerId);
-    }
+  if (access.shop) {
+    event.shopId = access.shop.id;
+    shopSellerId = access.shop.seller_id;
+    targetUserIds.add(shopSellerId);
   }
 
   const recipientIds = [...targetUserIds].filter((id) => id !== socket.user.sub);
@@ -339,9 +336,17 @@ async function handleChatTyping(socket, payload) {
   if (!roomId) return;
 
   const scope = payload.scope?.toString() || 'chat';
+  const access = await assertRealtimeRoomAccess(socket.user, roomId, {
+    scope,
+    shopId: payload.shopId?.toString() || null,
+    targetUserId: payload.targetUserId?.toString() || null,
+  });
   const targetUserIds = new Set([socket.user.sub]);
   if (payload.targetUserId) {
     targetUserIds.add(payload.targetUserId.toString());
+  }
+  for (const participantId of access.participantIds) {
+    targetUserIds.add(participantId);
   }
 
   if (scope === 'b2b') {
@@ -350,19 +355,8 @@ async function handleChatTyping(socket, payload) {
     }
   }
 
-  const shopId = payload.shopId?.toString() || null;
-  const roomShopKey = shopKeyFromRoomId(roomId);
-  if (shopId || roomShopKey) {
-    const result = await query(
-      `SELECT seller_id
-       FROM shops
-       WHERE id = $1 OR LOWER(name) = LOWER($2)
-       LIMIT 1`,
-      [shopId, roomShopKey],
-    );
-    if (result.rows[0]?.seller_id) {
-      targetUserIds.add(result.rows[0].seller_id);
-    }
+  if (access.shop?.seller_id) {
+    targetUserIds.add(access.shop.seller_id);
   }
 
   targetUserIds.delete(socket.user.sub);
@@ -384,6 +378,11 @@ async function handleChatTyping(socket, payload) {
 async function handleChatRead(socket, payload) {
   const roomId = payload.roomId?.toString();
   if (!roomId) return;
+  await assertRealtimeRoomAccess(socket.user, roomId, {
+    scope: payload.scope?.toString() || 'chat',
+    shopId: payload.shopId?.toString() || null,
+    targetUserId: payload.targetUserId?.toString() || null,
+  });
 
   await query(
     `UPDATE chat_messages cm
@@ -436,20 +435,18 @@ async function handleCallStart(socket, payload) {
     targetUserIds.add(targetUserId);
   }
 
-  const roomShopKey = shopKeyFromRoomId(roomId);
-  if (shopId || roomShopKey) {
-    const result = await query(
-      `SELECT id, seller_id
-       FROM shops
-       WHERE id = $1 OR LOWER(name) = LOWER($2)
-       LIMIT 1`,
-      [shopId, roomShopKey],
-    );
-    if (result.rows[0]?.seller_id) {
-      shopId = result.rows[0].id;
-      targetUserId ??= result.rows[0].seller_id;
-      targetUserIds.add(result.rows[0].seller_id);
-    }
+  const access = await assertRealtimeRoomAccess(socket.user, roomId, {
+    scope,
+    shopId,
+    targetUserId,
+  });
+  for (const participantId of access.participantIds) {
+    targetUserIds.add(participantId);
+  }
+  if (access.shop?.seller_id) {
+    shopId = access.shop.id;
+    targetUserId ??= access.shop.seller_id;
+    targetUserIds.add(access.shop.seller_id);
   }
 
   await query(
@@ -629,11 +626,98 @@ async function notifyPendingChatDelivered(user) {
   }
 }
 
+async function assertRealtimeRoomAccess(
+  user,
+  roomId,
+  { scope = 'chat', shopId = null, targetUserId = null } = {},
+) {
+  const normalizedScope = scope?.toString() || 'chat';
+  if (normalizedScope === 'b2b' || roomId?.startsWith('b2b:')) {
+    if (user.role !== 'seller') {
+      throw new Error('Only sellers can access B2B chat');
+    }
+    const sellerIds = b2BParticipantIdsFromRoom(roomId);
+    if (sellerIds.length !== 2) {
+      throw new Error('Invalid B2B chat room');
+    }
+    if (!sellerIds.includes(user.sub)) {
+      throw new Error('Seller cannot access another B2B chat');
+    }
+    if (targetUserId && !sellerIds.includes(targetUserId)) {
+      throw new Error('B2B recipient is not part of this room');
+    }
+    return { shop: null, participantIds: sellerIds };
+  }
+
+  if (!roomId?.startsWith('shop:')) {
+    throw new Error('Unsupported realtime room');
+  }
+
+  const { shopKey, userId } = parseShopRoomId(roomId);
+  if (!shopKey && !shopId) {
+    throw new Error('Invalid shop chat room');
+  }
+
+  const result = await query(
+    `SELECT id, seller_id
+     FROM shops
+     WHERE id = $1 OR id = $2 OR LOWER(name) = LOWER($3)
+     LIMIT 1`,
+    [shopId, shopKey, shopKey],
+  );
+  const shop = result.rows[0];
+  if (!shop) {
+    throw new Error('Chat shop not found');
+  }
+
+  if (user.role === 'user') {
+    if (!userId) {
+      throw new Error('Buyer chat room must include the buyer id');
+    }
+    if (userId !== user.sub) {
+      throw new Error('User cannot access another buyer chat');
+    }
+    if (targetUserId && targetUserId !== shop.seller_id) {
+      throw new Error('Buyer chat recipient must be the shop seller');
+    }
+    return { shop, participantIds: [user.sub, shop.seller_id] };
+  }
+
+  if (user.role === 'seller') {
+    if (shop.seller_id !== user.sub) {
+      throw new Error('Seller cannot access another shop chat');
+    }
+    if (targetUserId && userId && targetUserId !== userId) {
+      throw new Error('Seller chat recipient must match the buyer room');
+    }
+    return {
+      shop,
+      participantIds: [user.sub, userId, targetUserId].filter(Boolean),
+    };
+  }
+
+  throw new Error('Realtime room access denied');
+}
+
 function shopKeyFromRoomId(roomId) {
   if (!roomId?.startsWith('shop:')) return null;
   const value = roomId.slice('shop:'.length);
   const userMarkerIndex = value.indexOf(':user:');
   return userMarkerIndex === -1 ? value : value.slice(0, userMarkerIndex);
+}
+
+function parseShopRoomId(roomId) {
+  const value = roomId.startsWith('shop:')
+    ? roomId.slice('shop:'.length)
+    : roomId;
+  const userMarkerIndex = value.indexOf(':user:');
+  if (userMarkerIndex === -1) {
+    return { shopKey: value, userId: null };
+  }
+  return {
+    shopKey: value.slice(0, userMarkerIndex),
+    userId: value.slice(userMarkerIndex + ':user:'.length) || null,
+  };
 }
 
 function b2BParticipantIdsFromRoom(roomId) {

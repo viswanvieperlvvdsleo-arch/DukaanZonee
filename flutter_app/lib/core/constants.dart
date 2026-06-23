@@ -109,7 +109,7 @@ final ValueNotifier<Map<String, String>>
 globalSellerShopProfile = ValueNotifier({
   'name': 'My Shop',
   'address': '',
-  'phone': '+91 90305 22754',
+  'phone': '+91 00000 00000',
   'bio':
       'Sourcing the freshest organic greens and daily essentials directly from community producers.',
   'avatarUrl': '',

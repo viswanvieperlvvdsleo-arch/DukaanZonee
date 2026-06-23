@@ -266,8 +266,7 @@ class _UserScanPageState extends State<UserScanPage> {
   Future<void> _resolvePaymentQr(String qrPayload) async {
     final value = qrPayload.trim();
     if (value.isEmpty || _resolving) return;
-    final user = authService.currentUser.value;
-    debugPrint('SCAN LOG: User ${user?.id} scanned payment QR');
+    debugPrint('Payment QR scan detected');
     setState(() {
       _resolving = true;
       _handledScan = true;
@@ -281,6 +280,8 @@ class _UserScanPageState extends State<UserScanPage> {
           shop: session.shop,
           color: primary,
           scannedProducts: session.products,
+          gatewayProviders: session.providers,
+          preferredGatewayProvider: session.preferredProvider,
         ),
       );
     } catch (error) {

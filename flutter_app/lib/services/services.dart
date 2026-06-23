@@ -288,20 +288,7 @@ class MockAuthService implements AuthService {
   }) async {
     await Future.delayed(const Duration(seconds: 1));
 
-    // Strict Admin Logic
     if (role == Role.admin) {
-      if (email == 'ramviswan@gmail..com' && password == 'RamViswan@2005Bug') {
-        _isLoggedIn.value = true;
-        _currentRole.value = Role.admin;
-        _currentUser.value = UserModel(
-          id: 'admin_1',
-          name: 'Ram Viswan',
-          email: email,
-          mobile: '9999999999',
-          role: Role.admin,
-        );
-        return true;
-      }
       return false;
     }
 
@@ -311,7 +298,7 @@ class MockAuthService implements AuthService {
       id: 'user_123',
       name: email.split('@')[0].toUpperCase(),
       email: email,
-      mobile: '9030522754',
+      mobile: '0000000000',
       role: role,
     );
     return true;
@@ -661,17 +648,59 @@ class BackendAuthService implements AuthService {
   }
 }
 
+class PaymentGatewayOption {
+  const PaymentGatewayOption({
+    required this.id,
+    required this.label,
+    required this.mode,
+    required this.feeRate,
+    required this.isLiveReady,
+    this.note,
+  });
+
+  final String id;
+  final String label;
+  final String mode;
+  final double feeRate;
+  final bool isLiveReady;
+  final String? note;
+
+  bool get isMock => id == 'mock_gateway';
+  bool get isSandbox => mode == 'sandbox' || mode == 'sandbox_adapter';
+
+  String get statusLabel {
+    if (mode == 'live_keys_configured') return 'Live keys ready';
+    if (mode == 'sandbox_adapter') return 'Sandbox adapter';
+    return 'Sandbox';
+  }
+
+  static PaymentGatewayOption fromJson(Map<String, dynamic> json) {
+    return PaymentGatewayOption(
+      id: json['id']?.toString() ?? 'mock_gateway',
+      label: json['label']?.toString() ?? 'Mock Gateway',
+      mode: json['mode']?.toString() ?? 'sandbox',
+      feeRate: (json['feeRate'] as num?)?.toDouble() ?? 0.0236,
+      isLiveReady: json['isLiveReady'] == true,
+      note: json['note']?.toString(),
+    );
+  }
+}
+
 class PaymentSessionResult {
   const PaymentSessionResult({
     required this.shop,
     required this.products,
     required this.qrPayload,
+    required this.providers,
+    required this.preferredProvider,
     this.upiId,
   });
 
   final Shop shop;
   final List<Product> products;
   final String qrPayload;
+  final List<PaymentGatewayOption> providers;
+  final String preferredProvider;
   final String? upiId;
 }
 
@@ -687,6 +716,7 @@ class CompletedPayment {
     required this.status,
     required this.source,
     required this.provider,
+    this.gateway,
     this.gatewayReference,
     required this.createdAt,
     required this.items,
@@ -702,6 +732,7 @@ class CompletedPayment {
   final String status;
   final String source;
   final String provider;
+  final PaymentGatewayOption? gateway;
   final String? gatewayReference;
   final DateTime? createdAt;
   final List<Map<String, dynamic>> items;
@@ -742,6 +773,9 @@ class PaymentSessionService {
       address: shopMap['address']?.toString(),
       paymentQrPayload: shopMap['payment_qr_payload']?.toString(),
       upiId: shopMap['upi_id']?.toString(),
+      gatewayProvider:
+          shopMap['gateway_provider']?.toString() ??
+          session['preferredProvider']?.toString(),
       phone: shopMap['seller_phone']?.toString(),
       avatarUrl: shopMap['avatar_url']?.toString(),
       mapUrl: shopMap['map_url']?.toString(),
@@ -775,11 +809,31 @@ class PaymentSessionService {
         shopMapUrl: shop.mapUrl,
       );
     }).toList();
+    final providers = (session['providers'] as List? ?? const [])
+        .whereType<Map>()
+        .map(
+          (raw) =>
+              PaymentGatewayOption.fromJson(Map<String, dynamic>.from(raw)),
+        )
+        .toList();
 
     return PaymentSessionResult(
       shop: shop,
       products: products,
       qrPayload: session['qrPayload']?.toString() ?? qrPayload,
+      providers: providers.isEmpty
+          ? const [
+              PaymentGatewayOption(
+                id: 'mock_gateway',
+                label: 'Mock Gateway',
+                mode: 'sandbox',
+                feeRate: 0.0236,
+                isLiveReady: false,
+              ),
+            ]
+          : providers,
+      preferredProvider:
+          session['preferredProvider']?.toString() ?? 'mock_gateway',
       upiId: session['upiId']?.toString(),
     );
   }
@@ -788,6 +842,7 @@ class PaymentSessionService {
     required Shop shop,
     required double amount,
     required List<Map<String, dynamic>> selectedItems,
+    String provider = 'mock_gateway',
   }) async {
     final shopId = shop.id;
     if (shopId == null || shopId.trim().isEmpty) {
@@ -804,7 +859,7 @@ class PaymentSessionService {
       'amountCents': (amount * 100).round(),
       'items': bodyItems,
       'source': 'in_app',
-      'provider': 'mock_gateway',
+      'provider': provider,
     });
     final payment = Map<String, dynamic>.from(data['payment'] as Map);
     return _mapCompletedPayment(payment, fallbackShop: shop);
@@ -834,6 +889,11 @@ class PaymentSessionService {
       status: payment['status']?.toString() ?? 'completed',
       source: payment['source']?.toString() ?? 'in_app',
       provider: payment['provider']?.toString() ?? 'mock_gateway',
+      gateway: payment['gateway'] is Map
+          ? PaymentGatewayOption.fromJson(
+              Map<String, dynamic>.from(payment['gateway'] as Map),
+            )
+          : null,
       gatewayReference: payment['gatewayReference']?.toString(),
       createdAt: DateTime.tryParse(payment['createdAt']?.toString() ?? ''),
       items: (payment['items'] as List? ?? const [])
@@ -1637,7 +1697,7 @@ class PlatformSettings {
     }
 
     return PlatformSettings(
-      commissionRate: number('commissionRate', 0.03).clamp(0.0, 0.25),
+      commissionRate: number('commissionRate', 0.04).clamp(0.0, 0.25),
       promotion3DayRate: number('promotion3DayRate', 30),
       promotion7DayRate: number('promotion7DayRate', 60),
       promotion30DayRate: number('promotion30DayRate', 150),
@@ -1686,7 +1746,7 @@ class PlatformSettings {
 class PlatformSettingsService {
   final settings = ValueNotifier<PlatformSettings>(
     const PlatformSettings(
-      commissionRate: 0.03,
+      commissionRate: 0.04,
       promotion3DayRate: 30,
       promotion7DayRate: 60,
       promotion30DayRate: 150,
@@ -1738,12 +1798,22 @@ Future<void> openProductCheckout(BuildContext context, Product product) async {
   try {
     final session = await paymentSessionService.scanPaymentQr(qrPayload);
     if (!context.mounted) return;
+    final matchingProduct = session.products.firstWhere(
+      (item) => item.id == product.id,
+      orElse: () => session.products.firstWhere(
+        (item) => item.name.toLowerCase() == product.name.toLowerCase(),
+        orElse: () => product,
+      ),
+    );
     push(
       context,
       SmartScanCheckoutPage(
         shop: session.shop,
         color: primary,
+        prefilledCart: {matchingProduct.id: 1},
         scannedProducts: session.products,
+        gatewayProviders: session.providers,
+        preferredGatewayProvider: session.preferredProvider,
       ),
     );
   } catch (error) {
@@ -1776,6 +1846,9 @@ class SellerBackendService {
       'block': shop['block']?.toString() ?? '',
       'upiId': shop['upi_id']?.toString() ?? '',
       'paymentQrPayload': shop['payment_qr_payload']?.toString() ?? '',
+      'payoutStatus': shop['payout_status']?.toString() ?? 'sandbox_ready',
+      'gatewayProvider': shop['gateway_provider']?.toString() ?? 'mock_gateway',
+      'paymentQrUpdatedAt': shop['payment_qr_updated_at']?.toString() ?? '',
       'mapUrl': shop['map_url']?.toString() ?? '',
       'followerCount': '${shop['follower_count'] as int? ?? 0}',
       'rating': '${shop['rating'] ?? 0}',
@@ -1783,6 +1856,29 @@ class SellerBackendService {
       'isOpen': (shop['is_open'] == false ? false : true).toString(),
     };
     return shop;
+  }
+
+  Future<Map<String, dynamic>> getPaymentProfile() async {
+    final data = await apiClient.getJson('/api/seller/payment-profile');
+    return Map<String, dynamic>.from(data['paymentProfile'] as Map? ?? {});
+  }
+
+  Future<Map<String, dynamic>> updatePaymentProfile({
+    String? paymentQrPayload,
+    String? upiId,
+    String? gatewayProvider,
+    bool clearPaymentQr = false,
+  }) async {
+    final data = await apiClient.patchJson('/api/seller/payment-profile', {
+      if (clearPaymentQr) 'clearPaymentQr': true,
+      if (paymentQrPayload != null && paymentQrPayload.trim().isNotEmpty)
+        'paymentQrPayload': paymentQrPayload.trim(),
+      if (upiId != null && upiId.trim().isNotEmpty) 'upiId': upiId.trim(),
+      if (gatewayProvider != null && gatewayProvider.trim().isNotEmpty)
+        'gatewayProvider': gatewayProvider.trim(),
+    });
+    await syncCurrentShopProfile();
+    return Map<String, dynamic>.from(data['paymentProfile'] as Map? ?? {});
   }
 
   Future<Map<String, dynamic>> updateShop({
@@ -1838,12 +1934,26 @@ class SellerBackendService {
         .toList();
   }
 
+  Future<Map<String, dynamic>> lookupBarcode(String barcode) async {
+    final code = Uri.encodeComponent(barcode.trim());
+    final data = await apiClient.getJson('/api/seller/barcode-lookup/$code');
+    return {
+      'found': data['found'] == true,
+      'barcode': data['barcode']?.toString() ?? barcode.trim(),
+      'item': Map<String, dynamic>.from(data['item'] as Map? ?? {}),
+    };
+  }
+
   Future<Map<String, dynamic>> getDashboardSummary() async {
     final data = await apiClient.getJson('/api/seller/dashboard');
     return {
       'shop': Map<String, dynamic>.from(data['shop'] as Map? ?? {}),
       'summary': Map<String, dynamic>.from(data['summary'] as Map? ?? {}),
       'recentPayments': (data['recentPayments'] as List? ?? const [])
+          .whereType<Map>()
+          .map((raw) => Map<String, dynamic>.from(raw))
+          .toList(),
+      'analyticsPayments': (data['analyticsPayments'] as List? ?? const [])
           .whereType<Map>()
           .map((raw) => Map<String, dynamic>.from(raw))
           .toList(),

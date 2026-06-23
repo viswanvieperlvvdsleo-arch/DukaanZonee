@@ -24,10 +24,6 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _selectedRole = widget.initialRole;
-    // Pre-fill admin for testing if selected
-    if (_selectedRole == Role.admin) {
-      _emailController.text = 'ramviswan@gmail..com';
-    }
   }
 
   Future<void> _handleCredentials() async {

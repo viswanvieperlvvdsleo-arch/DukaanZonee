@@ -258,17 +258,30 @@ async function assertRoomAccess(user, roomId) {
       throw new HttpError(403, 'Only sellers can access B2B chat');
     }
     const sellerIds = parseB2BRoomSellerIds(roomId);
-    if (sellerIds.length === 2 && !sellerIds.includes(user.sub)) {
+    if (sellerIds.length !== 2) {
+      throw new HttpError(400, 'Invalid B2B chat room');
+    }
+    if (!sellerIds.includes(user.sub)) {
       throw new HttpError(403, 'Seller cannot access another B2B chat');
     }
     return;
   }
 
-  if (!roomId.startsWith('shop:')) return;
+  if (!roomId.startsWith('shop:')) {
+    throw new HttpError(400, 'Unsupported chat room');
+  }
 
   const { shopKey, userId } = parseShopRoomId(roomId);
-  if (user.role === 'user' && userId && userId !== user.sub) {
-    throw new HttpError(403, 'User cannot access another buyer chat');
+  if (!shopKey) {
+    throw new HttpError(400, 'Invalid shop chat room');
+  }
+  if (user.role === 'user') {
+    if (!userId) {
+      throw new HttpError(403, 'Buyer chat room must include the buyer id');
+    }
+    if (userId !== user.sub) {
+      throw new HttpError(403, 'User cannot access another buyer chat');
+    }
   }
   const result = await query(
     `SELECT seller_id FROM shops WHERE id = $1 OR LOWER(name) = LOWER($1)`,
@@ -280,6 +293,9 @@ async function assertRoomAccess(user, roomId) {
   }
   if (user.role === 'seller' && shop.seller_id !== user.sub) {
     throw new HttpError(403, 'Seller cannot access another shop chat');
+  }
+  if (!['user', 'seller'].includes(user.role)) {
+    throw new HttpError(403, 'Chat access denied');
   }
 }
 

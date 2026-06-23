@@ -72,11 +72,11 @@ settingsRouter.patch('/me', async (req, res, next) => {
 });
 
 function normalizePlatformSettings(value) {
-  const commissionRate = Number(value.commissionRate ?? value.commission_rate ?? 0.03);
+  const commissionRate = Number(value.commissionRate ?? value.commission_rate ?? 0.04);
   return {
     commissionRate: Number.isFinite(commissionRate)
       ? Math.min(Math.max(commissionRate, 0), 0.25)
-      : 0.03,
+      : 0.04,
     promotion3DayRate: Number(value.promotion3DayRate ?? 30),
     promotion7DayRate: Number(value.promotion7DayRate ?? 60),
     promotion30DayRate: Number(value.promotion30DayRate ?? 150),

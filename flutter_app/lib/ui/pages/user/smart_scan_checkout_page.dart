@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dukaan_zone_flutter/core/constants.dart';
@@ -19,12 +21,16 @@ class SmartScanCheckoutPage extends StatefulWidget {
     required this.color,
     this.prefilledCart, // from Group Saved: pre-populates the cart
     this.scannedProducts,
+    this.gatewayProviders = const [],
+    this.preferredGatewayProvider,
   });
 
   final Shop shop;
   final Color color;
   final Map<String, int>? prefilledCart;
   final List<Product>? scannedProducts;
+  final List<PaymentGatewayOption> gatewayProviders;
+  final String? preferredGatewayProvider;
 
   @override
   State<SmartScanCheckoutPage> createState() => _SmartScanCheckoutPageState();
@@ -42,6 +48,40 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
   bool _manualEdit = false; // true if user typed amount manually
   String _searchQuery = '';
   bool _isPaying = false;
+  late String _selectedGatewayProvider;
+  PlatformSettings _platformSettings = platformSettingsService.settings.value;
+
+  List<PaymentGatewayOption> get _gatewayProviders =>
+      widget.gatewayProviders.isNotEmpty
+      ? widget.gatewayProviders
+      : const [
+          PaymentGatewayOption(
+            id: 'mock_gateway',
+            label: 'Mock Gateway',
+            mode: 'sandbox',
+            feeRate: 0.0236,
+            isLiveReady: false,
+          ),
+          PaymentGatewayOption(
+            id: 'razorpay',
+            label: 'Razorpay',
+            mode: 'sandbox_adapter',
+            feeRate: 0.0236,
+            isLiveReady: false,
+          ),
+          PaymentGatewayOption(
+            id: 'phonepe',
+            label: 'PhonePe',
+            mode: 'sandbox_adapter',
+            feeRate: 0.02,
+            isLiveReady: false,
+          ),
+        ];
+
+  PaymentGatewayOption get _selectedGateway => _gatewayProviders.firstWhere(
+    (provider) => provider.id == _selectedGatewayProvider,
+    orElse: () => _gatewayProviders.first,
+  );
 
   List<Product> get _shopProducts =>
       widget.scannedProducts ??
@@ -59,7 +99,7 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
     for (final p in _shopProducts) {
       final qty = _cart[p.id] ?? 0;
       if (qty > 0) {
-        final raw = p.price.replaceAll(RegExp(r'[₹,]'), '');
+        final raw = p.price.replaceAll(RegExp(r'[^0-9.]'), '');
         total += (double.tryParse(raw) ?? 0) * qty;
       }
     }
@@ -73,6 +113,13 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
     super.initState();
     _amountCtrl = TextEditingController();
     _searchCtrl = TextEditingController();
+    platformSettingsService.settings.addListener(_syncPlatformSettings);
+    unawaited(_loadPlatformSettings());
+    final preferred =
+        widget.preferredGatewayProvider ?? widget.shop.gatewayProvider;
+    _selectedGatewayProvider = _gatewayProviders.any((p) => p.id == preferred)
+        ? preferred!
+        : _gatewayProviders.first.id;
 
     _pulseCtrl = AnimationController(
       vsync: this,
@@ -85,7 +132,20 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
 
     // Pre-fill cart from group saved
     if (widget.prefilledCart != null) {
-      _cart.addAll(widget.prefilledCart!);
+      for (final entry in widget.prefilledCart!.entries) {
+        Product? product;
+        for (final candidate in _shopProducts) {
+          if (candidate.id == entry.key) {
+            product = candidate;
+            break;
+          }
+        }
+        final available = product == null ? 0 : _stockQty(product);
+        final safeQty = entry.value.clamp(0, available).toInt();
+        if (safeQty > 0) {
+          _cart[entry.key] = safeQty;
+        }
+      }
       final total = _cartTotal;
       if (total > 0) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -97,16 +157,65 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
 
   @override
   void dispose() {
+    platformSettingsService.settings.removeListener(_syncPlatformSettings);
     _amountCtrl.dispose();
     _searchCtrl.dispose();
     _pulseCtrl.dispose();
     super.dispose();
   }
 
+  void _syncPlatformSettings() {
+    if (!mounted) return;
+    setState(() => _platformSettings = platformSettingsService.settings.value);
+  }
+
+  int _stockQty(Product p) {
+    final stockText = p.stock.toLowerCase();
+    if (stockText.contains('out')) return 0;
+    final match = RegExp(r'\d+').firstMatch(stockText);
+    return int.tryParse(match?.group(0) ?? '') ?? 0;
+  }
+
+  String _stockLabel(Product p) {
+    final stock = _stockQty(p);
+    if (stock <= 0) return 'Out of stock';
+    return stock == 1 ? '1 left' : '$stock left';
+  }
+
+  void _showStockMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _loadPlatformSettings() async {
+    try {
+      final settings = await platformSettingsService.load();
+      if (!mounted) return;
+      setState(() => _platformSettings = settings);
+    } catch (_) {
+      // Checkout can still proceed with the local default if settings are offline.
+    }
+  }
+
   void _updateQuantity(Product p, int delta) {
+    final available = _stockQty(p);
+    final current = _cart[p.id] ?? 0;
+    if (delta > 0 && available <= 0) {
+      _showStockMessage('${p.name} is out of stock');
+      return;
+    }
+    if (delta > 0 && current >= available) {
+      _showStockMessage('Only ${_stockLabel(p)} for ${p.name}');
+      return;
+    }
+
     setState(() {
-      final current = _cart[p.id] ?? 0;
-      final next = (current + delta).clamp(0, 99);
+      final next = (current + delta).clamp(0, available).toInt();
       if (next == 0) {
         _cart.remove(p.id);
       } else {
@@ -151,6 +260,44 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
     return _cartTotal;
   }
 
+  bool get _hasLinkedPaymentQr =>
+      widget.shop.paymentQrPayload?.trim().isNotEmpty == true;
+
+  String? get _linkedPaymentTarget {
+    final upi = widget.shop.upiId?.trim();
+    if (upi != null && upi.isNotEmpty) return upi;
+
+    final qrUpi = _extractUpiId(widget.shop.paymentQrPayload);
+    if (qrUpi != null && qrUpi.isNotEmpty) return qrUpi;
+
+    final phone = widget.shop.phone?.trim();
+    if (phone != null && phone.isNotEmpty) return phone;
+
+    return _hasLinkedPaymentQr ? 'Saved payment QR' : null;
+  }
+
+  String? _extractUpiId(String? payload) {
+    final value = payload?.trim();
+    if (value == null || value.isEmpty) return null;
+
+    try {
+      final uri = Uri.parse(value);
+      final pa = uri.queryParameters['pa']?.trim();
+      if (pa != null && pa.isNotEmpty) return pa;
+    } catch (_) {
+      // Fall through to the lightweight regex parser for non-URI QR payloads.
+    }
+
+    final match = RegExp(r'[?&]pa=([^&]+)').firstMatch(value);
+    if (match != null) {
+      final raw = match.group(1);
+      if (raw != null && raw.isNotEmpty) return Uri.decodeComponent(raw);
+    }
+
+    if (RegExp(r'^[\w.\-]+@[\w.\-]+$').hasMatch(value)) return value;
+    return null;
+  }
+
   Future<void> _proceedToPayment() async {
     final amount = _payableAmount;
     if (amount <= 0 && _totalItems == 0) {
@@ -169,15 +316,31 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
     for (final p in _shopProducts) {
       final qty = _cart[p.id] ?? 0;
       if (qty > 0) {
+        final available = _stockQty(p);
+        if (available <= 0) {
+          _showStockMessage('${p.name} is out of stock');
+          return;
+        }
+        if (qty > available) {
+          _showStockMessage('${p.name} has only $available left');
+          return;
+        }
         selectedItems.add({'product': p, 'qty': qty});
       }
     }
 
-    final approved = await _showMockGatewaySheet(
+    final providerId = await _showGatewaySheet(
       amount: amount,
       selectedItems: selectedItems,
     );
-    if (approved != true) return;
+    if (providerId == null) return;
+    final provider = _gatewayProviders.firstWhere(
+      (option) => option.id == providerId,
+      orElse: () => _selectedGateway,
+    );
+
+    final pinApproved = await _showSandboxPinSheet(amount, provider);
+    if (pinApproved != true) return;
 
     setState(() => _isPaying = true);
     try {
@@ -185,6 +348,7 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
         shop: widget.shop,
         amount: amount,
         selectedItems: selectedItems,
+        provider: provider.id,
       );
       if (!mounted) return;
       globalPaymentHistory.value = [
@@ -235,117 +399,343 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
     return '$hour:${n.minute.toString().padLeft(2, '0')} ${n.hour >= 12 ? 'PM' : 'AM'}';
   }
 
-  Future<bool?> _showMockGatewaySheet({
+  Future<String?> _showGatewaySheet({
     required double amount,
     required List<Map<String, dynamic>> selectedItems,
   }) {
     final grossCents = (amount * 100).round();
-    final gatewayFeeCents = (grossCents * 0.0236).round();
-    final commissionCents = (grossCents * 0.03).round();
-    final sellerNetCents = (grossCents - gatewayFeeCents - commissionCents)
-        .clamp(0, grossCents);
+    final commissionRate = _platformSettings.commissionRate;
+    final commissionCents = (grossCents * commissionRate).round();
+    final commissionLabel =
+        'DukaanZone ${_formatPercent(commissionRate * 100)}';
     final itemCount = selectedItems.fold<int>(
       0,
       (total, item) => total + (item['qty'] as int? ?? 0),
     );
 
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final selected = _gatewayProviders.firstWhere(
+            (provider) => provider.id == _selectedGatewayProvider,
+            orElse: () => _gatewayProviders.first,
+          );
+          final gatewayFeeCents = (grossCents * selected.feeRate).round();
+          final sellerNetCents =
+              (grossCents - gatewayFeeCents - commissionCents).clamp(
+                0,
+                grossCents,
+              );
+
+          return SafeArea(
+            top: false,
+            child: Container(
+              width: double.infinity,
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.all(22),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
+                boxShadow: shadowLg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: primary.withValues(alpha: .12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.payment_rounded, color: primary),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '${selected.label} Checkout',
+                          style: TextStyle(
+                            color: ink,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _gatewayProviders.map((provider) {
+                      final active = provider.id == selected.id;
+                      return ChoiceChip(
+                        selected: active,
+                        label: Text(provider.label),
+                        avatar: Icon(
+                          provider.id == 'phonepe'
+                              ? Icons.account_balance_wallet_rounded
+                              : provider.id == 'razorpay'
+                              ? Icons.bolt_rounded
+                              : Icons.science_rounded,
+                          size: 17,
+                          color: active ? Colors.white : primary,
+                        ),
+                        selectedColor: primary,
+                        labelStyle: TextStyle(
+                          color: active ? Colors.white : ink,
+                          fontWeight: FontWeight.w900,
+                        ),
+                        onSelected: (_) {
+                          setState(
+                            () => _selectedGatewayProvider = provider.id,
+                          );
+                          setSheetState(() {});
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected.isLiveReady
+                          ? const Color(0xFFE8FFF4)
+                          : const Color(0xFFFFF7ED),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      selected.isLiveReady
+                          ? 'Real keys configured. This adapter is ready for live capture.'
+                          : '${selected.statusLabel}: this test records payment safely without moving real money.',
+                      style: TextStyle(
+                        color: selected.isLiveReady
+                            ? const Color(0xFF047857)
+                            : const Color(0xFFB45309),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  _mockGatewayRow('Cart amount', _formatMockMoney(grossCents)),
+                  _mockGatewayRow(
+                    '${selected.label} fee estimate',
+                    _formatMockMoney(gatewayFeeCents),
+                  ),
+                  _mockGatewayRow(
+                    commissionLabel,
+                    _formatMockMoney(commissionCents),
+                  ),
+                  const Divider(height: 24),
+                  _mockGatewayRow(
+                    'Seller net after fees',
+                    _formatMockMoney(sellerNetCents),
+                    strong: true,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    itemCount > 0
+                        ? '$itemCount item(s) will be marked paid after success.'
+                        : 'Manual amount payment will be marked paid after success.',
+                    style: const TextStyle(
+                      color: muted,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.redAccent,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, selected.id),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primary,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: const Text('Continue to PIN'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<bool?> _showSandboxPinSheet(
+    double amount,
+    PaymentGatewayOption provider,
+  ) {
+    var pin = '';
+    var processing = false;
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => SafeArea(
-        child: Container(
-          margin: const EdgeInsets.all(14),
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: shadowLg,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          Future<void> submitSuccess() async {
+            setSheetState(() => processing = true);
+            await Future.delayed(const Duration(milliseconds: 650));
+            final oldTone = soundService.selectedTone.value;
+            soundService.selectedTone.value = 'Cash Register';
+            await soundService.playSelectedTone();
+            soundService.selectedTone.value = oldTone;
+            if (!ctx.mounted) return;
+            Navigator.pop(ctx, true);
+          }
+
+          void onKey(String key) {
+            if (processing) return;
+            if (key == '<') {
+              setSheetState(() {
+                if (pin.isNotEmpty) pin = pin.substring(0, pin.length - 1);
+              });
+              return;
+            }
+            if (pin.length >= 4) return;
+            setSheetState(() => pin += key);
+            HapticFeedback.selectionClick();
+            if (pin.length == 4) {
+              submitSuccess();
+            }
+          }
+
+          return SafeArea(
+            top: false,
+            child: Container(
+              width: double.infinity,
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.fromLTRB(22, 20, 22, 22),
+              decoration: BoxDecoration(
+                color: ink,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
+                boxShadow: shadowLg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 46,
-                    height: 46,
+                    width: 44,
+                    height: 4,
                     decoration: BoxDecoration(
-                      color: primary.withOpacity(.12),
-                      shape: BoxShape.circle,
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(99),
                     ),
-                    child: Icon(Icons.payment_rounded, color: primary),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Mock Gateway Checkout',
-                      style: TextStyle(
-                        color: ink,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                  const SizedBox(height: 20),
+                  const Icon(
+                    Icons.lock_outline_rounded,
+                    color: Colors.white,
+                    size: 34,
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Enter sandbox PIN',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '${provider.label} test pay ${_formatMockMoney((amount * 100).round())} to ${widget.shop.name}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(
+                      4,
+                      (index) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        margin: const EdgeInsets.symmetric(horizontal: 9),
+                        width: index < pin.length ? 18 : 14,
+                        height: index < pin.length ? 18 : 14,
+                        decoration: BoxDecoration(
+                          color: index < pin.length ? primary : Colors.white24,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white30),
+                        ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  if (processing)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 28),
+                      child: CircularProgressIndicator(color: Colors.white),
+                    )
+                  else
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 3,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 1.55,
+                      children: [
+                        for (var i = 1; i <= 9; i++)
+                          _SandboxPinKey(label: '$i', onTap: onKey),
+                        const SizedBox(),
+                        _SandboxPinKey(label: '0', onTap: onKey),
+                        _SandboxPinKey(
+                          label: '<',
+                          onTap: onKey,
+                          icon: Icons.backspace_outlined,
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: processing
+                        ? null
+                        : () => Navigator.pop(ctx, false),
+                    child: const Text(
+                      'Cancel payment',
+                      style: TextStyle(color: Colors.white70),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              _mockGatewayRow('Cart amount', _formatMockMoney(grossCents)),
-              _mockGatewayRow(
-                'Gateway estimate',
-                _formatMockMoney(gatewayFeeCents),
-              ),
-              _mockGatewayRow(
-                'DukaanZone 3%',
-                _formatMockMoney(commissionCents),
-              ),
-              const Divider(height: 24),
-              _mockGatewayRow(
-                'Seller net after fees',
-                _formatMockMoney(sellerNetCents),
-                strong: true,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                itemCount > 0
-                    ? '$itemCount item(s) will be marked paid after success.'
-                    : 'Manual amount payment will be marked paid after success.',
-                style: const TextStyle(
-                  color: muted,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.redAccent,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text('Fail Test'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(ctx, true),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                      child: const Text('Pay Success'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -378,6 +768,11 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
 
   String _formatMockMoney(int cents) {
     return 'Rs ${(cents / 100).toStringAsFixed(cents % 100 == 0 ? 0 : 2)}';
+  }
+
+  String _formatPercent(double percent) {
+    final fixed = percent.toStringAsFixed(percent % 1 == 0 ? 0 : 1);
+    return '$fixed%';
   }
 
   // ── Save Group Dialog ─────────────────────────────────────
@@ -775,6 +1170,7 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
               ),
             ),
           ),
+          _buildLinkedPaymentHint(color),
           if (_manualEdit && _cartTotal > 0)
             Padding(
               padding: const EdgeInsets.only(top: 4),
@@ -811,9 +1207,60 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
   }
 
   // ────────────────────────────────────────────────────────────
+  Widget _buildLinkedPaymentHint(Color color) {
+    final target = _linkedPaymentTarget;
+    if (target == null) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(top: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: .88),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: .16)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            _hasLinkedPaymentQr
+                ? Icons.qr_code_2_rounded
+                : Icons.account_balance_wallet_rounded,
+            color: color,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'Paying to',
+            style: TextStyle(
+              color: Color(0xFF64748B),
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              target,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                color: Color(0xFF0F172A),
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildProductRow(Product p, Color color) {
     final qty = _cart[p.id] ?? 0;
-    final rawPrice = p.price.replaceAll(RegExp(r'[₹,]'), '');
+    final stockQty = _stockQty(p);
+    final outOfStock = stockQty <= 0;
+    final rawPrice = p.price.replaceAll(RegExp(r'[^0-9.]'), '');
     final unitPrice = double.tryParse(rawPrice) ?? 0;
 
     return AnimatedContainer(
@@ -823,7 +1270,11 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
         color: qty > 0 ? color.withValues(alpha: .06) : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: qty > 0 ? color.withValues(alpha: .25) : Colors.transparent,
+          color: outOfStock
+              ? Colors.red.withValues(alpha: .18)
+              : qty > 0
+              ? color.withValues(alpha: .25)
+              : Colors.transparent,
           width: 1.5,
         ),
         boxShadow: [
@@ -846,7 +1297,11 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
                 color: p.tint,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(p.icon, color: color, size: 22),
+              child: Icon(
+                outOfStock ? Icons.block_rounded : p.icon,
+                color: outOfStock ? Colors.redAccent : color,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 12),
 
@@ -890,9 +1345,11 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
                     ],
                   ),
                   Text(
-                    p.stock,
-                    style: const TextStyle(
-                      color: Color(0xFF94A3B8),
+                    _stockLabel(p),
+                    style: TextStyle(
+                      color: outOfStock
+                          ? Colors.redAccent
+                          : const Color(0xFF94A3B8),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -903,14 +1360,15 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
             const SizedBox(width: 8),
 
             // +/- Controls
-            _buildQtyControl(p, qty, color),
+            _buildQtyControl(p, qty, color, stockQty),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildQtyControl(Product p, int qty, Color color) {
+  Widget _buildQtyControl(Product p, int qty, Color color, int stockQty) {
+    final canAdd = stockQty > 0 && qty < stockQty;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -946,22 +1404,30 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
 
         // ─── Plus always visible ───────────────────────────────
         GestureDetector(
-          onTap: () => _updateQuantity(p, 1),
+          onTap: canAdd ? () => _updateQuantity(p, 1) : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: qty > 0
+              color: !canAdd
+                  ? Colors.grey.shade100
+                  : qty > 0
                   ? color.withValues(alpha: .18)
                   : color.withValues(alpha: .10),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: color.withValues(alpha: qty > 0 ? .4 : .25),
+                color: !canAdd
+                    ? Colors.grey.shade300
+                    : color.withValues(alpha: qty > 0 ? .4 : .25),
                 width: 1.5,
               ),
             ),
-            child: Icon(Icons.add_rounded, color: color, size: 22),
+            child: Icon(
+              Icons.add_rounded,
+              color: canAdd ? color : Colors.grey.shade400,
+              size: 22,
+            ),
           ),
         ),
       ],
@@ -1139,6 +1605,38 @@ class _SmartScanCheckoutPageState extends State<SmartScanCheckoutPage>
 }
 
 // ─────────────────────────────────────────────────────────────
+class _SandboxPinKey extends StatelessWidget {
+  const _SandboxPinKey({required this.label, required this.onTap, this.icon});
+
+  final String label;
+  final ValueChanged<String> onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: .1),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: () => onTap(label),
+        borderRadius: BorderRadius.circular(18),
+        child: Center(
+          child: icon == null
+              ? Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                )
+              : Icon(icon, color: Colors.white, size: 22),
+        ),
+      ),
+    );
+  }
+}
+
 class _CircleControlBtn extends StatelessWidget {
   const _CircleControlBtn({
     required this.icon,

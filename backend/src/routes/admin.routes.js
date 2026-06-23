@@ -80,6 +80,34 @@ adminRouter.get('/overview', async (_req, res, next) => {
   }
 });
 
+adminRouter.get('/payments', async (req, res, next) => {
+  try {
+    const limit = Math.min(
+      Math.max(Number.parseInt(req.query.limit?.toString() ?? '120', 10) || 120, 1),
+      300,
+    );
+    const result = await query(
+      `SELECT pr.id, pr.gross_cents, pr.gateway_fee_cents,
+        pr.commission_cents, pr.seller_net_cents, pr.status, pr.source,
+        pr.provider, pr.gateway_reference, pr.created_at,
+        buyer.id AS buyer_id, buyer.name AS buyer_name,
+        seller.id AS seller_id, seller.name AS seller_name,
+        s.id AS shop_id, s.name AS shop_name, s.category, s.block,
+        s.upi_id, s.payment_qr_payload, s.payout_status, s.gateway_provider
+       FROM payment_records pr
+       INNER JOIN app_users buyer ON buyer.id = pr.user_id
+       INNER JOIN shops s ON s.id = pr.shop_id
+       INNER JOIN app_users seller ON seller.id = s.seller_id
+       ORDER BY pr.created_at DESC
+       LIMIT $1`,
+      [limit],
+    );
+    res.json({ payments: result.rows.map(mapAdminPayment) });
+  } catch (error) {
+    next(error);
+  }
+});
+
 adminRouter.get('/signals', async (_req, res, next) => {
   try {
     const result = await query(
@@ -402,7 +430,8 @@ adminRouter.get('/accounts', async (req, res, next) => {
       `SELECT u.id AS seller_id, u.name AS owner_name, u.email, u.phone,
         u.profile_pic, u.created_at, u.restricted_until, u.restriction_reason,
         s.id AS shop_id, s.name AS shop_name, s.category, s.block, s.avatar_url,
-        s.is_open,
+        s.is_open, s.upi_id, s.payment_qr_payload, s.payout_status,
+        s.gateway_provider, s.payment_qr_updated_at,
         COALESCE(SUM(pr.seller_net_cents), 0)::INT AS revenue_cents,
         (SELECT ROUND(AVG(rev.rating)::NUMERIC, 1)::FLOAT
          FROM product_reviews rev
@@ -842,6 +871,58 @@ function mapAdminSeller(row) {
     followerCount: row.follower_count ?? 0,
     createdAt: row.created_at,
     isOnline: isUserOnline(row.seller_id),
+    paymentProfile: {
+      upiId: row.upi_id,
+      hasUpi: typeof row.upi_id === 'string' && row.upi_id.trim() !== '',
+      hasPaymentQr:
+        typeof row.payment_qr_payload === 'string' &&
+        row.payment_qr_payload.trim() !== '',
+      paymentQrUpdatedAt: row.payment_qr_updated_at,
+      payoutStatus: row.payout_status ?? 'sandbox_ready',
+      gatewayProvider: row.gateway_provider ?? 'mock_gateway',
+      payoutReady:
+        typeof row.upi_id === 'string' &&
+        row.upi_id.trim() !== '' &&
+        typeof row.payment_qr_payload === 'string' &&
+        row.payment_qr_payload.trim() !== '' &&
+        typeof row.phone === 'string' &&
+        row.phone.trim() !== '',
+    },
+  };
+}
+
+function mapAdminPayment(row) {
+  return {
+    id: row.id,
+    grossCents: row.gross_cents,
+    gatewayFeeCents: row.gateway_fee_cents ?? 0,
+    commissionCents: row.commission_cents ?? 0,
+    sellerNetCents: row.seller_net_cents ?? 0,
+    status: row.status,
+    source: row.source,
+    provider: row.provider ?? 'mock_gateway',
+    gatewayReference: row.gateway_reference,
+    createdAt: row.created_at,
+    buyer: {
+      id: row.buyer_id,
+      name: row.buyer_name,
+    },
+    seller: {
+      id: row.seller_id,
+      name: row.seller_name,
+    },
+    shop: {
+      id: row.shop_id,
+      name: row.shop_name,
+      category: row.category,
+      block: row.block,
+      upiId: row.upi_id,
+      hasPaymentQr:
+        typeof row.payment_qr_payload === 'string' &&
+        row.payment_qr_payload.trim() !== '',
+      payoutStatus: row.payout_status ?? 'sandbox_ready',
+      gatewayProvider: row.gateway_provider ?? 'mock_gateway',
+    },
   };
 }
 
@@ -907,11 +988,11 @@ function mapAdminPromotion(row) {
 }
 
 function normalizePlatformSettings(value) {
-  const commissionRate = Number(value.commissionRate ?? value.commission_rate ?? 0.03);
+  const commissionRate = Number(value.commissionRate ?? value.commission_rate ?? 0.04);
   return {
     commissionRate: Number.isFinite(commissionRate)
       ? Math.min(Math.max(commissionRate, 0), 0.25)
-      : 0.03,
+      : 0.04,
     promotion3DayRate: Number(value.promotion3DayRate ?? 30),
     promotion7DayRate: Number(value.promotion7DayRate ?? 60),
     promotion30DayRate: Number(value.promotion30DayRate ?? 150),

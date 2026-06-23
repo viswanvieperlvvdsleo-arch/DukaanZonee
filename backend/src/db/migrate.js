@@ -30,6 +30,10 @@ const statements = [
     payment_qr_payload TEXT,
     payment_qr_fingerprint TEXT UNIQUE,
     upi_id TEXT,
+    payout_status TEXT NOT NULL DEFAULT 'sandbox_ready',
+    gateway_provider TEXT NOT NULL DEFAULT 'mock_gateway',
+    gateway_account_id TEXT,
+    payment_qr_updated_at TIMESTAMPTZ,
     avatar_url TEXT,
     map_url TEXT,
     is_open BOOLEAN NOT NULL DEFAULT TRUE,
@@ -39,6 +43,10 @@ const statements = [
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS payment_qr_payload TEXT`,
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS payment_qr_fingerprint TEXT`,
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS upi_id TEXT`,
+  `ALTER TABLE shops ADD COLUMN IF NOT EXISTS payout_status TEXT NOT NULL DEFAULT 'sandbox_ready'`,
+  `ALTER TABLE shops ADD COLUMN IF NOT EXISTS gateway_provider TEXT NOT NULL DEFAULT 'mock_gateway'`,
+  `ALTER TABLE shops ADD COLUMN IF NOT EXISTS gateway_account_id TEXT`,
+  `ALTER TABLE shops ADD COLUMN IF NOT EXISTS payment_qr_updated_at TIMESTAMPTZ`,
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS avatar_url TEXT`,
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS map_url TEXT`,
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS is_open BOOLEAN NOT NULL DEFAULT TRUE`,
@@ -109,8 +117,14 @@ const statements = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
   `INSERT INTO platform_settings (key, value)
-    VALUES ('payment', '{"commissionRate":0.03}'::jsonb)
+    VALUES ('payment', '{"commissionRate":0.04}'::jsonb)
     ON CONFLICT (key) DO NOTHING`,
+  `UPDATE platform_settings
+    SET value = value || '{"commissionRate":0.04}'::jsonb,
+        updated_at = NOW()
+    WHERE key = 'payment'
+      AND updated_by_user_id IS NULL
+      AND COALESCE((value->>'commissionRate')::NUMERIC, 0.03) = 0.03`,
   `CREATE TABLE IF NOT EXISTS product_reviews (
     id TEXT PRIMARY KEY,
     shelf_item_id TEXT NOT NULL REFERENCES shelf_items(id) ON DELETE CASCADE,

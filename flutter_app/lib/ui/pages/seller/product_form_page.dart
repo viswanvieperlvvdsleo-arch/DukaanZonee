@@ -4,7 +4,24 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 
 class ProductFormPage extends StatefulWidget {
-  const ProductFormPage({super.key});
+  final String? initialName;
+  final String? initialCategory;
+  final String? initialBarcode;
+  final String? initialDescription;
+  final String? initialImageUrl;
+  final double? initialPrice;
+  final int? initialStock;
+
+  const ProductFormPage({
+    super.key,
+    this.initialName,
+    this.initialCategory,
+    this.initialBarcode,
+    this.initialDescription,
+    this.initialImageUrl,
+    this.initialPrice,
+    this.initialStock,
+  });
 
   @override
   State<ProductFormPage> createState() => _ProductFormPageState();
@@ -28,6 +45,24 @@ class _ProductFormPageState extends State<ProductFormPage> {
   double _cropX = 0;
   double _cropY = 0;
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController.text = widget.initialName ?? '';
+    _categoryController.text = widget.initialCategory ?? '';
+    _barcodeController.text = widget.initialBarcode ?? '';
+    _descController.text = widget.initialDescription ?? '';
+    _rateController.text = widget.initialPrice == null
+        ? ''
+        : widget.initialPrice!.toStringAsFixed(
+            widget.initialPrice! % 1 == 0 ? 0 : 2,
+          );
+    _stockController.text = widget.initialStock?.toString() ?? '';
+    if (widget.initialImageUrl != null && widget.initialImageUrl!.isNotEmpty) {
+      _selectedImagePath = widget.initialImageUrl;
+    }
+  }
 
   @override
   void dispose() {

@@ -33,7 +33,7 @@ class PushNotificationPayload {
 Future<void> _firebaseMessagingBackgroundHandler(Map<String, dynamic> message) async {
   // This function runs in a separate background isolate when a push is received
   // and the app is in the background or completely closed/terminated.
-  debugPrint('📡 Hardware-level background message received: ${message}');
+  debugPrint('Hardware-level background message received');
   
   // Here, we can trigger localized alerts, update offline SQLite stores, etc.
 }
@@ -56,7 +56,7 @@ class HardwareNotificationService {
 
     // Simulate fetching the unique FCM registration token
     _fcmToken = 'fcm_token_dukaan_zone_${DateTime.now().millisecondsSinceEpoch}';
-    debugPrint('🔑 FCM Registration Token: $_fcmToken');
+    debugPrint('Hardware push token generated');
 
     // Register our background notification callback
     // In production: FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);

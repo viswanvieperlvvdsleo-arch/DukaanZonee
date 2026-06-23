@@ -8,6 +8,7 @@ import '../../../services/network_service.dart';
 import '../shared/media_input_bar.dart';
 import '../shared/chat_scroll_cues.dart';
 import '../shared/chat_typing_wave.dart';
+import '../shared/chat_voice_note_player.dart';
 
 class B2BChatPage extends StatefulWidget {
   const B2BChatPage({super.key});
@@ -2840,6 +2841,7 @@ class _B2BChatRoomPageState extends State<B2BChatRoomPage> {
                                       highlight: _isHighlightedMedia(msg),
                                       editorParams: msg['editorParams'],
                                       attachmentPath: msg['attachmentPath'],
+                                      duration: msg['duration'] as int?,
                                       highlightQuery: _isSearching
                                           ? _chatSearchQuery
                                           : null,
@@ -3063,6 +3065,7 @@ class _B2BBubble extends StatefulWidget {
     this.highlight = false,
     this.editorParams,
     this.attachmentPath,
+    this.duration,
   });
 
   final String message;
@@ -3077,6 +3080,7 @@ class _B2BBubble extends StatefulWidget {
   final bool highlight;
   final Map<String, dynamic>? editorParams;
   final String? attachmentPath;
+  final int? duration;
 
   @override
   State<_B2BBubble> createState() => _B2BBubbleState();
@@ -3472,25 +3476,10 @@ class _B2BBubbleState extends State<_B2BBubble> with TickerProviderStateMixin {
                       ],
                     )
                   else if (widget.type == 'voice')
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.play_arrow_rounded,
-                          color: widget.isSent ? Colors.white : primary,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            widget.message,
-                            style: TextStyle(
-                              color: textColor,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
+                    ChatVoiceNotePlayer(
+                      audioUrl: widget.attachmentPath,
+                      durationSeconds: widget.duration,
+                      isSent: widget.isSent,
                     )
                   else
                     _buildMessageText(

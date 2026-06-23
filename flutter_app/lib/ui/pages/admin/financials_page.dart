@@ -1,18 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 import 'seller_financial_details_page.dart';
 
 class SellerFinancialAccount {
   SellerFinancialAccount({
+    required this.shopId,
     required this.shopName,
     required this.ownerName,
     required this.totalReceived,
     required this.transactions,
+    required this.paymentReady,
+    required this.gatewayProvider,
   });
+  final String shopId;
   final String shopName;
   final String ownerName;
   final double totalReceived;
   final List<FinancialTx> transactions;
+  final bool paymentReady;
+  final String gatewayProvider;
 }
 
 class FinancialTx {
@@ -88,25 +96,48 @@ class _AdminFinancialsPageState extends State<AdminFinancialsPage> {
   String? _error;
   Map<String, dynamic> _overview = const {};
   List<SellerFinancialAccount> _accounts = const [];
+  StreamSubscription<LiveEvent>? _liveSub;
 
   @override
   void initState() {
     super.initState();
     _loadFinancials();
+    liveSocketService.connect();
+    _liveSub = liveSocketService.events.listen((event) {
+      if (event.type == 'payment.completed') {
+        _loadFinancials(silent: true);
+      }
+    });
   }
 
-  Future<void> _loadFinancials() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  @override
+  void dispose() {
+    _liveSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadFinancials({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
     try {
       final overviewData = await apiClient.getJson('/api/admin/overview');
       final accountsData = await apiClient.getJson('/api/admin/accounts');
+      final paymentsData = await apiClient.getJson('/api/admin/payments');
       if (!mounted) return;
+      final payments = (paymentsData['payments'] as List? ?? const [])
+          .whereType<Map>()
+          .map((raw) => Map<String, dynamic>.from(raw))
+          .toList();
       final sellers = (accountsData['sellers'] as List? ?? const [])
           .whereType<Map>()
-          .map((raw) => _mapSellerFinancial(Map<String, dynamic>.from(raw)))
+          .map(
+            (raw) =>
+                _mapSellerFinancial(Map<String, dynamic>.from(raw), payments),
+          )
           .toList();
       setState(() {
         _overview = Map<String, dynamic>.from(
@@ -119,32 +150,50 @@ class _AdminFinancialsPageState extends State<AdminFinancialsPage> {
       if (!mounted) return;
       setState(() {
         _error = error.toString();
-        _isLoading = false;
+        if (!silent) _isLoading = false;
       });
     }
   }
 
-  SellerFinancialAccount _mapSellerFinancial(Map<String, dynamic> data) {
+  SellerFinancialAccount _mapSellerFinancial(
+    Map<String, dynamic> data,
+    List<Map<String, dynamic>> payments,
+  ) {
+    final shopId = data['shopId']?.toString() ?? '';
+    final profile = Map<String, dynamic>.from(
+      data['paymentProfile'] as Map? ?? {},
+    );
+    final txs = payments
+        .where((payment) {
+          final shop = payment['shop'] as Map?;
+          return shop?['id']?.toString() == shopId;
+        })
+        .map((payment) => _mapPaymentTx(payment))
+        .toList();
     final revenueCents = data['revenueCents'] as int? ?? 0;
-    final revenue = revenueCents / 100;
-    final txs = revenueCents <= 0
-        ? <FinancialTx>[]
-        : [
-            FinancialTx(
-              id: 'SELLER-${data['id'] ?? data['shopId'] ?? 'net'}',
-              date:
-                  DateTime.tryParse(data['createdAt']?.toString() ?? '') ??
-                  DateTime.now(),
-              amount: revenue,
-              category: FinancialTxCategory.payoutDeduction,
-              type: FinancialTxType.credit,
-            ),
-          ];
     return SellerFinancialAccount(
+      shopId: shopId,
       shopName: data['shopName']?.toString() ?? 'Shop',
       ownerName: data['owner']?.toString() ?? 'Seller',
-      totalReceived: revenue,
+      totalReceived: revenueCents / 100,
       transactions: txs,
+      paymentReady: profile['payoutReady'] == true,
+      gatewayProvider: profile['gatewayProvider']?.toString() ?? 'mock_gateway',
+    );
+  }
+
+  FinancialTx _mapPaymentTx(Map<String, dynamic> payment) {
+    return FinancialTx(
+      id:
+          payment['gatewayReference']?.toString() ??
+          payment['id']?.toString() ??
+          'payment',
+      date:
+          DateTime.tryParse(payment['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
+      amount: ((payment['sellerNetCents'] as int? ?? 0) / 100),
+      category: FinancialTxCategory.payoutDeduction,
+      type: FinancialTxType.credit,
     );
   }
 
@@ -416,13 +465,27 @@ class _AdminFinancialsPageState extends State<AdminFinancialsPage> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    'Owner: ${account.ownerName} - ${account.transactions.length} ledger rows',
-                    style: const TextStyle(
-                      color: muted,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                    ),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        'Owner: ${account.ownerName} - ${account.transactions.length} ledger rows',
+                        style: const TextStyle(
+                          color: muted,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                      _buildStatusPill(
+                        account.paymentReady
+                            ? 'Payment ready'
+                            : 'Payment setup incomplete',
+                        account.paymentReady ? success : Colors.orange,
+                      ),
+                      _buildStatusPill(account.gatewayProvider, primary),
+                    ],
                   ),
                 ],
               ),
@@ -491,6 +554,24 @@ class _AdminFinancialsPageState extends State<AdminFinancialsPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatusPill(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+        ),
       ),
     );
   }

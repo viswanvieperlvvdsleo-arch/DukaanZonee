@@ -3,7 +3,15 @@ import { z } from 'zod';
 import { config } from '../config.js';
 import { query, withTransaction } from '../db/pool.js';
 import { optionalAuth, requireAuth } from '../middleware/auth.js';
-import { publishToRole, publishToUser } from '../realtime/socketHub.js';
+import {
+  estimateGatewayFeeCents,
+  getPaymentGateway,
+  listPaymentGateways,
+  makeGatewayReference,
+  paymentProviderIds,
+  toPublicGateway,
+} from '../payments/gatewayRegistry.js';
+import { publishToRole, publishToUser, publishToUsers } from '../realtime/socketHub.js';
 import { HttpError, notFound } from '../utils/httpError.js';
 import { extractUpiId, makeId, makeQrFingerprint, normalizeQrPayload } from '../utils/ids.js';
 
@@ -23,7 +31,7 @@ const completeCheckoutSchema = z.object({
   amountCents: z.number().int().min(1).optional(),
   items: z.array(checkoutItemSchema).max(120).default([]),
   source: z.enum(['in_app', 'offline_scan']).default('in_app'),
-  provider: z.enum(['mock_gateway', 'razorpay']).default('mock_gateway'),
+  provider: z.enum(paymentProviderIds).default('mock_gateway'),
 });
 
 async function getPaymentSession(qrPayload) {
@@ -33,7 +41,8 @@ async function getPaymentSession(qrPayload) {
 
   const shopResult = await query(
     `SELECT s.id, s.seller_id, s.name, s.category, s.block, s.address, s.latitude, s.longitude,
-      qr_code, qr_payload, payment_qr_payload, payment_qr_fingerprint, upi_id, is_open
+      qr_code, qr_payload, payment_qr_payload, payment_qr_fingerprint, upi_id,
+      gateway_provider, is_open
       , seller.phone AS seller_phone
      FROM shops s
      INNER JOIN app_users seller ON seller.id = s.seller_id
@@ -65,6 +74,9 @@ async function getPaymentSession(qrPayload) {
       qrFingerprint: fingerprint,
       qrPayload: shop.payment_qr_payload ?? shop.qr_payload,
       upiId: shop.upi_id,
+      preferredProvider: shop.gateway_provider ?? 'mock_gateway',
+      gateway: toPublicGateway(getPaymentGateway(shop.gateway_provider)),
+      providers: listPaymentGateways(),
       mode: 'scan_existing_payment_qr_with_live_shelf',
     },
   };
@@ -74,16 +86,6 @@ paymentSessionsRouter.post('/scan', optionalAuth, async (req, res, next) => {
   try {
     const input = scanQrSchema.parse(req.body);
     const session = await getPaymentSession(input.qrPayload);
-    if (req.user?.sub && session.shop?.seller_id) {
-      publishToUser(session.shop.seller_id, 'payment.scan.started', {
-        shopId: session.shop.id,
-        shopName: session.shop.name,
-        userId: req.user.sub,
-        userName: req.user.name ?? 'Customer',
-        itemCount: session.items.length,
-        createdAt: new Date().toISOString(),
-      });
-    }
     res.json(session);
   } catch (error) {
     next(error);
@@ -189,7 +191,8 @@ paymentSessionsRouter.post('/complete', requireAuth, async (req, res, next) => {
       if (items.length > 0) {
         const itemIds = items.map((item) => item.shelfItemId);
         const itemRows = await client.query(
-          `SELECT id, name, price_cents, stock_qty, is_active
+          `SELECT id, name, price_cents, stock_qty, is_active,
+            alert_threshold, alert_enabled
            FROM shelf_items
            WHERE shop_id = $1 AND id = ANY($2::TEXT[])
            FOR UPDATE`,
@@ -230,13 +233,14 @@ paymentSessionsRouter.post('/complete', requireAuth, async (req, res, next) => {
 
       const commissionRate = await getCurrentCommissionRate(client);
       const commissionCents = Math.round(grossCents * commissionRate);
-      const gatewayFeeCents = estimateGatewayFeeCents(grossCents);
+      const gateway = getPaymentGateway(input.provider);
+      const gatewayFeeCents = estimateGatewayFeeCents(grossCents, gateway.id);
       const sellerNetCents = Math.max(
         0,
         grossCents - commissionCents - gatewayFeeCents,
       );
       const paymentId = makeId('pay');
-      const gatewayReference = `${input.provider.toUpperCase()}-${paymentId}`;
+      const gatewayReference = makeGatewayReference(gateway.id, paymentId);
 
       const paymentResult = await client.query(
         `INSERT INTO payment_records (
@@ -257,11 +261,12 @@ paymentSessionsRouter.post('/complete', requireAuth, async (req, res, next) => {
           commissionCents,
           sellerNetCents,
           input.source,
-          input.provider,
+          gateway.id,
           gatewayReference,
         ],
       );
 
+      const lowStockAlerts = [];
       for (const item of lineItems) {
         await client.query(
           `INSERT INTO payment_record_items (
@@ -279,41 +284,172 @@ paymentSessionsRouter.post('/complete', requireAuth, async (req, res, next) => {
             item.lineTotalCents,
           ],
         );
-        await client.query(
+        const updatedItem = await client.query(
           `UPDATE shelf_items
-           SET stock_qty = stock_qty - $2,
-               updated_at = NOW()
-           WHERE id = $1`,
+            SET stock_qty = stock_qty - $2,
+                updated_at = NOW()
+            WHERE id = $1
+            RETURNING id, name, stock_qty, alert_threshold, alert_enabled`,
           [item.shelfItemId, item.quantity],
         );
+        const stockItem = updatedItem.rows[0];
+        const threshold = Number(stockItem?.alert_threshold);
+        if (
+          stockItem?.alert_enabled === true &&
+          Number.isFinite(threshold) &&
+          threshold >= 0 &&
+          Number(stockItem.stock_qty) <= threshold
+        ) {
+          lowStockAlerts.push(stockItem);
+        }
       }
 
+      const sellerNotificationId = makeId('notif');
+      const sellerNotification = {
+        id: sellerNotificationId,
+        type: 'payment.completed',
+        title: 'New checkout payment',
+        body: `${req.user.name ?? 'Customer'} paid ${formatRupees(grossCents)} at ${shop.name}`,
+        shopId: shop.id,
+        shopName: shop.name,
+        actorName: req.user.name ?? 'Customer',
+      };
       await client.query(
         `INSERT INTO notifications (
           id, recipient_user_id, actor_user_id, shop_id, type, title, body
         )
         VALUES ($1, $2, $3, $4, 'payment.completed', $5, $6)`,
         [
-          makeId('notif'),
+          sellerNotificationId,
           shop.seller_id,
           req.user.sub,
           shop.id,
-          'New checkout payment',
-          `${req.user.name ?? 'Customer'} paid ${formatRupees(grossCents)} at ${shop.name}`,
+          sellerNotification.title,
+          sellerNotification.body,
         ],
       );
+
+      const paymentChatMessage = {
+        id: paymentId,
+        roomId: `shop:${shop.id}:user:${req.user.sub}`,
+        scope: 'shop_payment',
+        senderUserId: req.user.sub,
+        targetUserId: shop.seller_id,
+        shopId: shop.id,
+        text: `Paid ${formatRupees(grossCents)} to ${shop.name}`,
+        type: 'payment',
+        createdAt: paymentResult.rows[0].created_at,
+        sender: {
+          id: req.user.sub,
+          name: req.user.name ?? 'Customer',
+          role: req.user.role,
+        },
+      };
+      await client.query(
+        `INSERT INTO chat_messages (
+          id, room_id, scope, sender_user_id, target_user_id, shop_id, text,
+          message_type, delivery_status, delivered_at
+        )
+        VALUES ($1, $2, 'shop_payment', $3, $4, $5, $6, 'payment',
+          'sent_online', NOW())
+        ON CONFLICT (id) DO NOTHING`,
+        [
+          paymentChatMessage.id,
+          paymentChatMessage.roomId,
+          paymentChatMessage.senderUserId,
+          paymentChatMessage.targetUserId,
+          paymentChatMessage.shopId,
+          paymentChatMessage.text,
+        ],
+      );
+
+      const lowStockNotifications = [];
+      for (const stockItem of lowStockAlerts) {
+        const notificationId = makeId('notif');
+        const threshold = Number(stockItem.alert_threshold);
+        const body = `${stockItem.name} is now at ${stockItem.stock_qty} left after checkout. Alert threshold: ${threshold}.`;
+        await client.query(
+          `INSERT INTO notifications (
+            id, recipient_user_id, actor_user_id, shop_id, type, title, body
+          )
+          VALUES ($1, $2, $3, $4, 'stock.low', 'Low stock alert', $5)`,
+          [notificationId, shop.seller_id, req.user.sub, shop.id, body],
+        );
+        lowStockNotifications.push({
+          id: notificationId,
+          type: 'stock.low',
+          title: 'Low stock alert',
+          body,
+          shopId: shop.id,
+          shopName: shop.name,
+          actorName: req.user.name ?? 'Customer',
+        });
+      }
+
+      const admins = await client.query(
+        `SELECT id
+         FROM app_users
+         WHERE role = 'admin' AND deleted_at IS NULL`,
+      );
+      const adminNotificationIds = [];
+      const adminNotification = {
+        type: 'payment.completed.admin',
+        title: 'Checkout recorded',
+        body: `${req.user.name ?? 'Customer'} paid ${formatRupees(grossCents)} to ${shop.name}. DukaanZone fee: ${formatRupees(commissionCents)}.`,
+        shopId: shop.id,
+        shopName: shop.name,
+        actorName: req.user.name ?? 'Customer',
+      };
+      for (const admin of admins.rows) {
+        const notificationId = makeId('notif');
+        adminNotificationIds.push(admin.id);
+        await client.query(
+          `INSERT INTO notifications (
+            id, recipient_user_id, actor_user_id, shop_id, type, title, body
+          )
+          VALUES ($1, $2, $3, $4, 'payment.completed.admin', $5, $6)`,
+          [
+            notificationId,
+            admin.id,
+            req.user.sub,
+            shop.id,
+            adminNotification.title,
+            adminNotification.body,
+          ],
+        );
+      }
 
       return {
         shop,
         payment: paymentResult.rows[0],
         items: lineItems,
+        sellerNotification,
+        lowStockNotifications,
+        adminNotification,
+        adminNotificationIds,
+        paymentChatMessage,
       };
     });
 
     const payload = mapCompletedPayment(result.payment, result.shop, result.items, req.user);
+    publishToUser(result.shop.seller_id, 'notification.created', result.sellerNotification);
+    for (const notification of result.lowStockNotifications) {
+      publishToUser(result.shop.seller_id, 'notification.created', notification);
+    }
+    publishToUsers(result.adminNotificationIds, 'notification.created', result.adminNotification);
     publishToUser(result.shop.seller_id, 'payment.completed', payload);
     publishToUser(req.user.sub, 'payment.completed', payload);
     publishToRole('admin', 'payment.completed', payload);
+    publishToRole('user', 'stock.updated', {
+      shopId: result.shop.id,
+      sellerId: result.shop.seller_id,
+      itemIds: result.items.map((item) => item.shelfItemId),
+    });
+    publishToUsers(
+      [result.shop.seller_id, req.user.sub],
+      'chat.message',
+      result.paymentChatMessage,
+    );
 
     res.status(201).json({ payment: payload });
   } catch (error) {
@@ -352,6 +488,7 @@ function mapCompletedPayment(payment, shop, items, user) {
     status: payment.status,
     source: payment.source,
     provider: payment.provider ?? 'mock_gateway',
+    gateway: toPublicGateway(getPaymentGateway(payment.provider)),
     gatewayReference: payment.gateway_reference,
     createdAt: payment.created_at,
     items: items.map((item) => ({
@@ -383,15 +520,11 @@ function mapHistoryPayment(row, user) {
     status: row.status,
     source: row.source,
     provider: row.provider ?? 'mock_gateway',
+    gateway: toPublicGateway(getPaymentGateway(row.provider)),
     gatewayReference: row.gateway_reference,
     createdAt: row.created_at,
     items: row.items ?? [],
   };
-}
-
-function estimateGatewayFeeCents(grossCents) {
-  // Mock gateway estimate: 2% payment fee + 18% GST on that fee = 2.36%.
-  return Math.round(grossCents * 0.0236);
 }
 
 function formatRupees(cents) {

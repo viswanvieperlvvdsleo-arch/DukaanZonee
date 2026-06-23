@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 
@@ -12,18 +14,33 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
   List<CompletedPayment> _history = const [];
   bool _loading = true;
   String? _error;
+  StreamSubscription<LiveEvent>? _liveSub;
 
   @override
   void initState() {
     super.initState();
     _loadHistory();
+    liveSocketService.connect();
+    _liveSub = liveSocketService.events.listen((event) {
+      if (event.type == 'payment.completed') {
+        _loadHistory(silent: true);
+      }
+    });
   }
 
-  Future<void> _loadHistory() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  @override
+  void dispose() {
+    _liveSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadHistory({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     try {
       final history = await paymentSessionService.history();
       if (!mounted) return;
@@ -34,7 +51,7 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _loading = false;
+        if (!silent) _loading = false;
         _error = 'Could not load purchase history.';
       });
     }

@@ -12,17 +12,40 @@ class UserHomePage extends StatefulWidget {
 
 class _UserHomePageState extends State<UserHomePage> {
   late Future<DiscoverySnapshot> _homeFuture;
+  StreamSubscription<LiveEvent>? _liveSub;
 
   @override
   void initState() {
     super.initState();
     _homeFuture = discoveryService.getHome();
+    liveSocketService.connect();
+    _liveSub = liveSocketService.events.listen(_handleLiveEvent);
   }
 
   void _reload() {
+    if (!mounted) return;
     setState(() {
       _homeFuture = discoveryService.getHome();
     });
+  }
+
+  void _handleLiveEvent(LiveEvent event) {
+    if (!mounted) return;
+    final type = event.type;
+    if (type == 'payment.completed' ||
+        type == 'stock.updated' ||
+        type == 'notification.created' ||
+        type == 'promotion.created' ||
+        type == 'promotion.status' ||
+        type == 'promotion.metrics') {
+      _reload();
+    }
+  }
+
+  @override
+  void dispose() {
+    _liveSub?.cancel();
+    super.dispose();
   }
 
   @override

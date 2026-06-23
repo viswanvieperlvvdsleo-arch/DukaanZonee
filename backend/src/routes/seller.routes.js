@@ -47,6 +47,13 @@ const shopUpdateSchema = z.object({
   clearPaymentQr: z.boolean().optional(),
 });
 
+const paymentProfileSchema = z.object({
+  paymentQrPayload: z.string().trim().min(8).max(2000).optional(),
+  upiId: z.string().trim().max(120).optional(),
+  gatewayProvider: z.enum(['mock_gateway', 'razorpay', 'phonepe']).optional(),
+  clearPaymentQr: z.boolean().optional(),
+});
+
 const qrImageDecodeSchema = z.object({
   imageData: z.string().min(32).max(8_000_000),
 });
@@ -71,6 +78,7 @@ async function getSellerShop(sellerId) {
   const result = await query(
     `SELECT id, seller_id, name, category, block, address, latitude, longitude,
       qr_code, qr_payload, payment_qr_payload, payment_qr_fingerprint, upi_id,
+      payout_status, gateway_provider, gateway_account_id, payment_qr_updated_at,
       avatar_url, map_url, is_open,
       (SELECT COUNT(*)::INT
        FROM shop_followers sf
@@ -102,6 +110,29 @@ async function getSellerItem(sellerId, itemId) {
   return result.rows[0];
 }
 
+function mapDashboardPaymentRow(row) {
+  return {
+    id: row.id,
+    grossCents: row.gross_cents,
+    gatewayFeeCents: row.gateway_fee_cents ?? 0,
+    commissionCents: row.commission_cents,
+    sellerNetCents: row.seller_net_cents,
+    status: row.status,
+    source: row.source,
+    provider: row.provider,
+    gatewayReference: row.gateway_reference,
+    createdAt: row.created_at,
+    user: {
+      id: row.user_id,
+      name: row.user_name,
+      profilePic: row.profile_pic?.startsWith('blob:')
+        ? null
+        : row.profile_pic,
+    },
+    items: row.items,
+  };
+}
+
 sellerRouter.get('/shop', async (req, res, next) => {
   try {
     const shop = await getSellerShop(req.user.sub);
@@ -109,6 +140,117 @@ sellerRouter.get('/shop', async (req, res, next) => {
       throw new HttpError(404, 'Seller shop not found');
     }
     res.json({ shop });
+  } catch (error) {
+    next(error);
+  }
+});
+
+sellerRouter.get('/payment-profile', async (req, res, next) => {
+  try {
+    const shop = await getSellerShop(req.user.sub);
+    if (!shop) {
+      throw new HttpError(404, 'Seller shop not found');
+    }
+
+    res.json({ paymentProfile: mapPaymentProfile(shop, req.user) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+sellerRouter.patch('/payment-profile', async (req, res, next) => {
+  try {
+    const input = paymentProfileSchema.parse(req.body);
+    const shop = await getSellerShop(req.user.sub);
+    if (!shop) {
+      throw new HttpError(404, 'Seller shop not found');
+    }
+
+    const shouldClearPaymentQr = input.clearPaymentQr === true;
+    let paymentQrPayload = null;
+    let paymentQrFingerprint = null;
+    let upiId = input.upiId?.trim() || null;
+
+    if (shouldClearPaymentQr) {
+      paymentQrPayload = '';
+      paymentQrFingerprint = '';
+      upiId = '';
+    } else if (input.paymentQrPayload !== undefined && input.paymentQrPayload.trim() !== '') {
+      paymentQrPayload = normalizeQrPayload(input.paymentQrPayload);
+      paymentQrFingerprint = makeQrFingerprint(paymentQrPayload);
+      upiId = input.upiId ?? extractUpiId(paymentQrPayload);
+    } else if (upiId && !shop.payment_qr_payload) {
+      paymentQrPayload = buildUpiQrPayload(upiId, shop.name);
+      paymentQrFingerprint = makeQrFingerprint(paymentQrPayload);
+    }
+
+    if (!shouldClearPaymentQr && (paymentQrFingerprint !== null || upiId !== null)) {
+      const existingQr = await query(
+        `SELECT id FROM shops
+         WHERE id <> $1
+          AND (
+            ($2::TEXT IS NOT NULL AND payment_qr_fingerprint = $2)
+            OR ($3::TEXT IS NOT NULL AND upi_id = $3)
+          )
+         LIMIT 1`,
+        [shop.id, paymentQrFingerprint, upiId],
+      );
+      if (existingQr.rows.length > 0) {
+        throw new HttpError(409, 'Payment QR or UPI ID already linked to another shop');
+      }
+    }
+
+    const result = shouldClearPaymentQr
+      ? await query(
+          `UPDATE shops
+           SET payment_qr_payload = NULL,
+               payment_qr_fingerprint = NULL,
+               upi_id = NULL,
+               gateway_provider = COALESCE($2, gateway_provider),
+               payment_qr_updated_at = NOW(),
+               updated_at = NOW()
+           WHERE id = $1
+           RETURNING id, seller_id, name, category, block, address, latitude, longitude,
+             qr_code, qr_payload, payment_qr_payload, payment_qr_fingerprint, upi_id,
+             payout_status, gateway_provider, gateway_account_id, payment_qr_updated_at,
+             avatar_url, map_url, is_open`,
+          [shop.id, input.gatewayProvider ?? null],
+        )
+      : await query(
+          `UPDATE shops
+           SET payment_qr_payload = CASE
+                 WHEN $2::TEXT IS NOT NULL AND $2::TEXT <> '' THEN $2::TEXT
+                 ELSE payment_qr_payload
+               END,
+               payment_qr_fingerprint = CASE
+                 WHEN $3::TEXT IS NOT NULL AND $3::TEXT <> '' THEN $3::TEXT
+                 ELSE payment_qr_fingerprint
+               END,
+               upi_id = CASE
+                 WHEN $4::TEXT IS NOT NULL AND $4::TEXT <> '' THEN $4::TEXT
+                 ELSE upi_id
+               END,
+               gateway_provider = COALESCE($5, gateway_provider),
+               payment_qr_updated_at = CASE
+                 WHEN $2::TEXT IS NOT NULL AND $2::TEXT <> '' THEN NOW()
+                 ELSE payment_qr_updated_at
+               END,
+               updated_at = NOW()
+           WHERE id = $1
+           RETURNING id, seller_id, name, category, block, address, latitude, longitude,
+             qr_code, qr_payload, payment_qr_payload, payment_qr_fingerprint, upi_id,
+             payout_status, gateway_provider, gateway_account_id, payment_qr_updated_at,
+             avatar_url, map_url, is_open`,
+          [
+            shop.id,
+            paymentQrPayload,
+            paymentQrFingerprint,
+            upiId,
+            input.gatewayProvider ?? null,
+          ],
+        );
+
+    res.json({ paymentProfile: mapPaymentProfile(result.rows[0], req.user) });
   } catch (error) {
     next(error);
   }
@@ -190,6 +332,32 @@ sellerRouter.get('/dashboard', async (req, res, next) => {
       [shop.id],
     );
 
+    const analyticsPayments = await query(
+      `SELECT pr.id, pr.gross_cents, pr.gateway_fee_cents,
+        pr.commission_cents, pr.seller_net_cents, pr.status, pr.source,
+        pr.provider, pr.gateway_reference, pr.created_at,
+        buyer.id AS user_id, buyer.name AS user_name, buyer.profile_pic,
+        COALESCE(
+          JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'name', pri.item_name,
+              'quantity', pri.quantity,
+              'lineTotalCents', pri.line_total_cents
+            )
+          ) FILTER (WHERE pri.id IS NOT NULL),
+          '[]'::JSON
+        ) AS items
+       FROM payment_records pr
+       INNER JOIN app_users buyer ON buyer.id = pr.user_id
+       LEFT JOIN payment_record_items pri ON pri.payment_id = pr.id
+       WHERE pr.shop_id = $1
+         AND pr.status = 'completed'
+       GROUP BY pr.id, buyer.id
+       ORDER BY pr.created_at DESC
+       LIMIT 400`,
+      [shop.id],
+    );
+
     const topItems = await query(
       `SELECT pri.shelf_item_id, pri.item_name,
         SUM(pri.quantity)::INT AS quantity,
@@ -211,26 +379,8 @@ sellerRouter.get('/dashboard', async (req, res, next) => {
         ...summary.rows[0],
         ...inventory.rows[0],
       },
-      recentPayments: recentPayments.rows.map((row) => ({
-        id: row.id,
-        grossCents: row.gross_cents,
-        gatewayFeeCents: row.gateway_fee_cents ?? 0,
-        commissionCents: row.commission_cents,
-        sellerNetCents: row.seller_net_cents,
-        status: row.status,
-        source: row.source,
-        provider: row.provider,
-        gatewayReference: row.gateway_reference,
-        createdAt: row.created_at,
-        user: {
-          id: row.user_id,
-          name: row.user_name,
-          profilePic: row.profile_pic?.startsWith('blob:')
-            ? null
-            : row.profile_pic,
-        },
-        items: row.items,
-      })),
+      recentPayments: recentPayments.rows.map(mapDashboardPaymentRow),
+      analyticsPayments: analyticsPayments.rows.map(mapDashboardPaymentRow),
       topItems: topItems.rows.map((row) => ({
         shelfItemId: row.shelf_item_id,
         name: row.item_name,
@@ -486,6 +636,7 @@ sellerRouter.patch('/shop', async (req, res, next) => {
                payment_qr_payload = NULL,
                payment_qr_fingerprint = NULL,
                upi_id = NULL,
+               payment_qr_updated_at = NOW(),
                avatar_url = COALESCE($8, avatar_url),
                map_url = COALESCE($9, map_url),
                is_open = COALESCE($10, is_open),
@@ -493,6 +644,7 @@ sellerRouter.patch('/shop', async (req, res, next) => {
            WHERE id = $1
            RETURNING id, seller_id, name, category, block, address, latitude, longitude,
              qr_code, qr_payload, payment_qr_payload, payment_qr_fingerprint, upi_id,
+             payout_status, gateway_provider, gateway_account_id, payment_qr_updated_at,
              avatar_url, map_url, is_open`,
           [
             shop.id,
@@ -516,16 +668,20 @@ sellerRouter.patch('/shop', async (req, res, next) => {
                latitude = COALESCE($6, latitude),
                longitude = COALESCE($7, longitude),
                payment_qr_payload = CASE
-                 WHEN $8 IS NOT NULL AND $8 <> '' THEN $8
+                 WHEN $8::TEXT IS NOT NULL AND $8::TEXT <> '' THEN $8::TEXT
                  ELSE payment_qr_payload
                END,
                payment_qr_fingerprint = CASE
-                 WHEN $9 IS NOT NULL AND $9 <> '' THEN $9
+                 WHEN $9::TEXT IS NOT NULL AND $9::TEXT <> '' THEN $9::TEXT
                  ELSE payment_qr_fingerprint
                END,
                upi_id = CASE
-                 WHEN $10 IS NOT NULL AND $10 <> '' THEN $10
+                 WHEN $10::TEXT IS NOT NULL AND $10::TEXT <> '' THEN $10::TEXT
                  ELSE upi_id
+               END,
+               payment_qr_updated_at = CASE
+                 WHEN $8::TEXT IS NOT NULL AND $8::TEXT <> '' THEN NOW()
+                 ELSE payment_qr_updated_at
                END,
                avatar_url = COALESCE($11, avatar_url),
                map_url = COALESCE($12, map_url),
@@ -534,6 +690,7 @@ sellerRouter.patch('/shop', async (req, res, next) => {
            WHERE id = $1
            RETURNING id, seller_id, name, category, block, address, latitude, longitude,
              qr_code, qr_payload, payment_qr_payload, payment_qr_fingerprint, upi_id,
+             payout_status, gateway_provider, gateway_account_id, payment_qr_updated_at,
              avatar_url, map_url, is_open`,
           [
             shop.id,
@@ -581,6 +738,45 @@ sellerRouter.get('/items', async (req, res, next) => {
   }
 });
 
+sellerRouter.get('/barcode-lookup/:barcode', async (req, res, next) => {
+  try {
+    const rawBarcode = req.params.barcode?.trim();
+    if (!rawBarcode) {
+      throw new HttpError(400, 'Barcode is required');
+    }
+
+    const result = await query(
+      `SELECT si.id, si.shop_id, si.name, si.price_cents, si.stock_qty, si.category,
+              si.barcode, si.description, si.image_url, si.alert_threshold,
+              si.alert_enabled, si.is_active, si.created_at, si.updated_at,
+              s.name AS shop_name
+         FROM shelf_items si
+         INNER JOIN shops s ON s.id = si.shop_id
+        WHERE si.barcode = $1
+        ORDER BY si.updated_at DESC, si.created_at DESC
+        LIMIT 1`,
+      [rawBarcode],
+    );
+
+    const item = result.rows[0];
+    if (!item) {
+      res.json({
+        found: false,
+        barcode: rawBarcode,
+      });
+      return;
+    }
+
+    res.json({
+      found: true,
+      barcode: rawBarcode,
+      item,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 sellerRouter.post('/items', async (req, res, next) => {
   try {
     const input = itemSchema.parse(req.body);
@@ -613,6 +809,12 @@ sellerRouter.post('/items', async (req, res, next) => {
         input.isActive ?? true,
       ],
     );
+
+    publishToRole('user', 'stock.updated', {
+      shopId: shop.id,
+      sellerId: req.user.sub,
+      itemIds: [result.rows[0].id],
+    });
 
     res.status(201).json({ item: result.rows[0] });
   } catch (error) {
@@ -660,6 +862,12 @@ sellerRouter.patch('/items/:itemId', async (req, res, next) => {
       ],
     );
 
+    publishToRole('user', 'stock.updated', {
+      shopId: item.shop_id,
+      sellerId: req.user.sub,
+      itemIds: [item.id],
+    });
+
     res.json({ item: result.rows[0] });
   } catch (error) {
     next(error);
@@ -674,6 +882,13 @@ sellerRouter.delete('/items/:itemId', async (req, res, next) => {
     }
 
     await query('DELETE FROM shelf_items WHERE id = $1', [item.id]);
+
+    publishToRole('user', 'stock.updated', {
+      shopId: item.shop_id,
+      sellerId: req.user.sub,
+      itemIds: [item.id],
+    });
+
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -700,6 +915,41 @@ function mapSellerPromotion(row) {
         : row.item_image_url,
       priceCents: row.price_cents ?? 0,
     },
+  };
+}
+
+function mapPaymentProfile(shop, user) {
+  const hasUpi = typeof shop.upi_id === 'string' && shop.upi_id.trim() !== '';
+  const hasQr =
+    typeof shop.payment_qr_payload === 'string' &&
+    shop.payment_qr_payload.trim() !== '';
+  const hasMobile = typeof user?.phone === 'string' && user.phone.trim() !== '';
+  const missing = [];
+
+  if (!hasMobile) missing.push('seller_mobile');
+  if (!hasUpi) missing.push('upi_id');
+  if (!hasQr) missing.push('payment_qr');
+
+  return {
+    shopId: shop.id,
+    shopName: shop.name,
+    sellerId: shop.seller_id,
+    sellerMobile: user?.phone ?? null,
+    upiId: shop.upi_id,
+    paymentQrPayload: shop.payment_qr_payload,
+    paymentQrFingerprint: shop.payment_qr_fingerprint,
+    paymentQrUpdatedAt: shop.payment_qr_updated_at,
+    hasUpi,
+    hasPaymentQr: hasQr,
+    hasMobile,
+    gatewayProvider: shop.gateway_provider ?? 'mock_gateway',
+    gatewayMode: (shop.gateway_provider ?? 'mock_gateway') === 'mock_gateway'
+      ? 'sandbox'
+      : 'live_pending_verification',
+    gatewayAccountId: shop.gateway_account_id,
+    payoutStatus: shop.payout_status ?? 'sandbox_ready',
+    payoutReady: missing.length === 0,
+    missing,
   };
 }
 

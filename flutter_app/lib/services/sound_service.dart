@@ -15,7 +15,9 @@ class SoundService {
   final Map<String, Timer> _activeAlerts = {};
 
   // Selected sound tone preference
-  final ValueNotifier<String> selectedTone = ValueNotifier<String>('Default Chime');
+  final ValueNotifier<String> selectedTone = ValueNotifier<String>(
+    'Default Chime',
+  );
 
   final List<String> availableTones = [
     'Default Chime',
@@ -25,17 +27,23 @@ class SoundService {
     'Alert Siren',
     'Soft Pop',
     'Vroom Engine',
-    'Silent'
+    'Silent',
   ];
 
   final Map<String, String> _toneUrls = {
-    'Default Chime': 'https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav',
-    'Cash Register': 'https://assets.mixkit.co/active_storage/sfx/2019/2019-600.wav',
-    'Digital Beep': 'https://assets.mixkit.co/active_storage/sfx/911/911-600.wav',
-    'Success Ping': 'https://assets.mixkit.co/active_storage/sfx/2568/2568-600.wav',
-    'Alert Siren': 'https://assets.mixkit.co/active_storage/sfx/1653/1653-600.wav',
+    'Default Chime':
+        'https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav',
+    'Cash Register':
+        'https://assets.mixkit.co/active_storage/sfx/2019/2019-600.wav',
+    'Digital Beep':
+        'https://assets.mixkit.co/active_storage/sfx/911/911-600.wav',
+    'Success Ping':
+        'https://assets.mixkit.co/active_storage/sfx/2568/2568-600.wav',
+    'Alert Siren':
+        'https://assets.mixkit.co/active_storage/sfx/1653/1653-600.wav',
     'Soft Pop': 'https://assets.mixkit.co/active_storage/sfx/1005/1005-600.wav',
-    'Vroom Engine': 'https://assets.mixkit.co/active_storage/sfx/2190/2190-600.wav',
+    'Vroom Engine':
+        'https://assets.mixkit.co/active_storage/sfx/2190/2190-600.wav',
   };
 
   Future<void> init() async {
@@ -46,7 +54,8 @@ class SoundService {
     // Inject Web Audio API Synthesizer on Web to produce actual instrument/synth tones offline
     if (kIsWeb) {
       try {
-        js.context.callMethod('eval', ["""
+        js.context.callMethod('eval', [
+          """
           window.dukaanZoneSynth = function(toneName) {
             try {
               var AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -102,7 +111,8 @@ class SoundService {
               console.error(e);
             }
           };
-        """]);
+        """,
+        ]);
       } catch (e) {
         print("Failed to inject JS synthesizer: $e");
       }
@@ -144,11 +154,16 @@ class SoundService {
 
   /// Plays the selected notification tone followed by a voice message
   Future<void> triggerVoiceAlert(String productName) async {
-    // 1. Play Tone (Selected notification sound)
     await playSelectedTone();
 
-    // 2. Speak the message
-    await _tts.speak("Alert, the item $productName got low.");
+    final cleanName = productName.trim().isEmpty
+        ? 'one item'
+        : productName.trim();
+    await _tts.setLanguage("en-IN");
+    await _tts.setPitch(0.92);
+    await _tts.setSpeechRate(0.42);
+    await _tts.stop();
+    await _tts.speak("Low stock alert. $cleanName needs restock.");
   }
 
   /// Starts a persistent hourly alert for a specific product
@@ -159,7 +174,9 @@ class SoundService {
     triggerVoiceAlert(productName);
 
     // Set up hourly timer
-    _activeAlerts[productId] = Timer.periodic(const Duration(hours: 1), (timer) {
+    _activeAlerts[productId] = Timer.periodic(const Duration(hours: 1), (
+      timer,
+    ) {
       triggerVoiceAlert(productName);
     });
   }
@@ -179,6 +196,3 @@ class SoundService {
 }
 
 final soundService = SoundService();
-
-
-

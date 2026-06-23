@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 
@@ -16,18 +18,34 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Map<String, dynamic> _overview = const {};
   List<Map<String, dynamic>> _users = const [];
   List<Map<String, dynamic>> _sellers = const [];
+  StreamSubscription<LiveEvent>? _liveSub;
 
   @override
   void initState() {
     super.initState();
     _loadDashboard();
+    liveSocketService.connect();
+    _liveSub = liveSocketService.events.listen((event) {
+      if (event.type == 'payment.completed' ||
+          event.type == 'notification.created') {
+        _loadDashboard(silent: true);
+      }
+    });
   }
 
-  Future<void> _loadDashboard() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  @override
+  void dispose() {
+    _liveSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadDashboard({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+    }
     try {
       final overviewData = await apiClient.getJson('/api/admin/overview');
       final accountsData = await apiClient.getJson('/api/admin/accounts');
@@ -50,7 +68,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       if (!mounted) return;
       setState(() {
         _error = error.toString();
-        _isLoading = false;
+        if (!silent) _isLoading = false;
       });
     }
   }

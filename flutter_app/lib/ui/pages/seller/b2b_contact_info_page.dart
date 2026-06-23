@@ -185,7 +185,7 @@ class B2BContactInfoPage extends StatelessWidget {
                   const SizedBox(height: 4),
                   if (!isGroup)
                     Text(
-                      '+91 79895 46383',
+                      '+91 00000 00000',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,

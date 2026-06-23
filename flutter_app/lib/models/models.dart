@@ -79,6 +79,7 @@ class Shop {
     this.address,
     this.paymentQrPayload,
     this.upiId,
+    this.gatewayProvider,
     this.phone,
     this.avatarUrl,
     this.mapUrl,
@@ -97,6 +98,7 @@ class Shop {
   final String? address;
   final String? paymentQrPayload;
   final String? upiId;
+  final String? gatewayProvider;
   final String? phone;
   final String? avatarUrl;
   final String? mapUrl;

@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 import 'package:dukaan_zone_flutter/ui/pages/shared/chat_scroll_cues.dart';
 import 'package:dukaan_zone_flutter/ui/pages/shared/chat_typing_wave.dart';
+import 'package:dukaan_zone_flutter/ui/pages/shared/chat_voice_note_player.dart';
 
 // ─────────────────────────────────────────────────────────────
 //  Message Status Color System
@@ -1491,7 +1492,7 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
 
   bool _canReceiveReceipt(Map<String, dynamic> message) {
     final type = message['type']?.toString();
-    return type != 'deleted' && type != 'payment';
+    return type != 'deleted' && type != 'payment' && type != 'payment_done';
   }
 
   String _mediaLabel(String type, String? mediaName) {
@@ -1659,7 +1660,9 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
   ) {
     for (final msg in messages) {
       final type = msg['type']?.toString() ?? 'text';
-      if (type == 'deleted' || type == 'payment') continue;
+      if (type == 'deleted' || type == 'payment' || type == 'payment_done') {
+        continue;
+      }
       final text = msg['message']?.toString() ?? '';
       final forwardedId = 'fwd-${DateTime.now().microsecondsSinceEpoch}';
       liveSocketService.sendChatMessage(
@@ -1978,9 +1981,12 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
                         index == 0 ||
                         _history[index]['date'] != _history[index - 1]['date'];
                     final isSelected = _selectedMessages.contains(item);
+                    final normalizedType = item['type'] == 'payment_done'
+                        ? 'payment'
+                        : item['type'];
 
                     Widget messageWidget;
-                    if (item['type'] == 'payment') {
+                    if (normalizedType == 'payment') {
                       messageWidget = _UserPaymentBubble(
                         amount: item['amount'],
                         status: item['status'],
@@ -2613,36 +2619,15 @@ class _UserChatBubble extends StatelessWidget {
         ],
       );
     } else if (type == 'voice') {
-      final s = duration ?? 0;
-      final dur = '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
-      content = Row(
-        mainAxisSize: MainAxisSize.min,
+      content = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.play_circle_filled_rounded,
-            color: isSent ? Colors.white : primary,
-            size: 32,
+          ChatVoiceNotePlayer(
+            audioUrl: mediaPath,
+            durationSeconds: duration,
+            isSent: isSent,
           ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.graphic_eq_rounded,
-                color: isSent ? Colors.white70 : muted,
-                size: 20,
-              ),
-              Text(
-                dur,
-                style: TextStyle(
-                  color: isSent ? Colors.white70 : muted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 12),
+          const SizedBox(height: 4),
           Text(
             time,
             style: TextStyle(

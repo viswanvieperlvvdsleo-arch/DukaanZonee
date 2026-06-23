@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
+import 'seller_metric_analytics_page.dart';
 import 'offline_scanner_page.dart';
 
 class SellerDashboardPage extends StatefulWidget {
@@ -18,6 +19,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
   StreamSubscription<LiveEvent>? _liveSub;
   Map<String, dynamic> _summary = const {};
   List<Map<String, dynamic>> _recentPayments = const [];
+  List<Map<String, dynamic>> _analyticsPayments = const [];
   List<Map<String, dynamic>> _topItems = const [];
   bool _dashboardLoading = true;
 
@@ -71,6 +73,10 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
             .whereType<Map>()
             .map((raw) => Map<String, dynamic>.from(raw))
             .toList();
+        _analyticsPayments = (data['analyticsPayments'] as List? ?? const [])
+            .whereType<Map>()
+            .map((raw) => Map<String, dynamic>.from(raw))
+            .toList();
         _topItems = (data['topItems'] as List? ?? const [])
             .whereType<Map>()
             .map((raw) => Map<String, dynamic>.from(raw))
@@ -84,75 +90,22 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
     }
   }
 
-  Future<void> _openMetricDetail(BuildContext context, String title) async {
+  Future<void> _openMetricDetail(
+    BuildContext context,
+    String title, {
+    String? initialCustomerId,
+  }) async {
     if (title == 'Low Stock') {
       await _openLowStockDetail(context);
       return;
     }
-
-    final rows = _recentPayments.map((payment) {
-      final user = Map<String, dynamic>.from(payment['user'] as Map? ?? {});
-      final items = (payment['items'] as List? ?? const [])
-          .whereType<Map>()
-          .map((item) {
-            final name = item['name']?.toString() ?? 'Item';
-            final qty = item['quantity'] as int? ?? 1;
-            return '$name x$qty';
-          })
-          .join(', ');
-      final createdAt = DateTime.tryParse(
-        payment['createdAt']?.toString() ?? '',
-      );
-
-      String amount;
-      String subtitle;
-      if (title == 'Today Sales') {
-        amount = _formatRupeesCents(payment['grossCents'] as int? ?? 0);
-        subtitle = items.isEmpty ? 'Direct payment' : items;
-      } else if (title == 'Net To Seller') {
-        amount = _formatRupeesCents(payment['sellerNetCents'] as int? ?? 0);
-        subtitle =
-            'Gross ${_formatRupeesCents(payment['grossCents'] as int? ?? 0)} after fees';
-      } else {
-        amount = _formatRupeesCents(payment['commissionCents'] as int? ?? 0);
-        subtitle = 'Provider ${payment['provider']?.toString() ?? 'gateway'}';
-      }
-
-      return _MetricDetailRow(
-        title: user['name']?.toString() ?? 'Customer',
-        subtitle: subtitle,
-        trailing: amount,
-        caption: _formatDetailTimestamp(createdAt),
-      );
-    }).toList();
-
-    final headlineValue = switch (title) {
-      'Today Sales' => _formatRupeesCents(_summaryInt('today_gross_cents')),
-      'Net To Seller' => _formatRupeesCents(
-        _summaryInt('today_seller_net_cents'),
-      ),
-      'DukaanZone fee' => _formatRupeesCents(
-        _summaryInt('today_commission_cents'),
-      ),
-      _ => 'Rs 0',
-    };
-    final headlineNote = switch (title) {
-      'Today Sales' =>
-        '${_summaryInt('today_payment_count')} payments recorded today',
-      'Net To Seller' => 'Live amount after commission and gateway fee',
-      'DukaanZone fee' => 'Today platform commission from completed checkouts',
-      _ => 'Live backend data',
-    };
-
     if (!mounted) return;
     push(
       context,
-      SellerMetricDetailPage(
+      SellerMetricAnalyticsPage(
         title: title,
-        headlineValue: headlineValue,
-        headlineNote: headlineNote,
-        rows: rows,
-        emptyLabel: 'No backend records for this card yet.',
+        payments: _analyticsPayments,
+        initialCustomerId: initialCustomerId,
       ),
     );
   }
@@ -197,15 +150,6 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
         SnackBar(content: Text('Could not load low stock details: $error')),
       );
     }
-  }
-
-  String _formatDetailTimestamp(DateTime? value) {
-    if (value == null) return 'Recent activity';
-    final local = value.toLocal();
-    final hour = local.hour % 12 == 0 ? 12 : local.hour % 12;
-    final minute = local.minute.toString().padLeft(2, '0');
-    final suffix = local.hour >= 12 ? 'PM' : 'AM';
-    return '${local.day}/${local.month}/${local.year}  $hour:$minute $suffix';
   }
 
   @override
@@ -499,6 +443,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
         ),
       ],
     );
+    /*
     return GridView.count(
       crossAxisCount: MediaQuery.sizeOf(context).width > 600 ? 4 : 2,
       shrinkWrap: true,
@@ -526,6 +471,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
         _buildHealthCard(context, 'Margin', '34%', '+1.2%', true),
       ],
     );
+    */
   }
 
   Widget _buildRecentPayments() {
@@ -573,58 +519,66 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
             })
             .join(', ');
         final user = Map<String, dynamic>.from(payment['user'] as Map? ?? {});
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: shadowSm,
+        return InkWell(
+          onTap: () => _openMetricDetail(
+            context,
+            'Today Sales',
+            initialCustomerId: user['id']?.toString(),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: shadowSm,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: success.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.payments_outlined, color: success),
                 ),
-                child: const Icon(Icons.payments_outlined, color: success),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user['name']?.toString() ?? 'Customer',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      items.isEmpty ? 'Direct payment' : items,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: muted,
-                        fontWeight: FontWeight.w700,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user['name']?.toString() ?? 'Customer',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        items.isEmpty ? 'Direct payment' : items,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: muted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                _formatRupeesCents(payment['grossCents'] as int? ?? 0),
-                style: const TextStyle(
-                  color: success,
-                  fontWeight: FontWeight.w900,
+                const SizedBox(width: 12),
+                Text(
+                  _formatRupeesCents(payment['grossCents'] as int? ?? 0),
+                  style: const TextStyle(
+                    color: success,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       }).toList(),

@@ -413,6 +413,7 @@ class _LiveNotificationBellState extends State<LiveNotificationBell>
     );
     liveSocketService.connect();
     _liveSub = liveSocketService.events.listen(_handleLiveEvent);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadUnreadOnOpen());
   }
 
   @override
@@ -424,21 +425,17 @@ class _LiveNotificationBellState extends State<LiveNotificationBell>
   }
 
   void _handleLiveEvent(LiveEvent event) {
-    if (event.type != 'notification.created' &&
-        event.type != 'payment.scan.started') {
+    if (event.type != 'notification.created') {
       return;
     }
 
-    final title = event.type == 'payment.scan.started'
-        ? 'Shop QR scanned'
-        : event.payload['title']?.toString() ?? 'New notification';
-    final body = event.type == 'payment.scan.started'
-        ? '${event.payload['userName'] ?? 'A customer'} opened ${event.payload['shopName'] ?? 'your shop'} shelf.'
-        : event.payload['body']?.toString() ??
-              'Open notifications to review it.';
+    final notificationType = event.payload['type']?.toString() ?? event.type;
+    final title = event.payload['title']?.toString() ?? 'New notification';
+    final body =
+        event.payload['body']?.toString() ?? 'Open notifications to review it.';
 
     if (!mounted) return;
-    _playNotificationTone();
+    unawaited(_playNotificationSoundFor(type: notificationType, body: body));
     setState(() => _hasUnread = true);
     _alertCtrl.repeat(reverse: true);
     Future.delayed(const Duration(seconds: 3), () {
@@ -449,16 +446,59 @@ class _LiveNotificationBellState extends State<LiveNotificationBell>
     _showTopToast(title: title, body: body);
   }
 
-  Future<void> _playNotificationTone() async {
+  Future<void> _loadUnreadOnOpen() async {
+    if (!mounted || authService.currentUser.value == null) return;
+    try {
+      final notifications = await appNotificationService.list();
+      final unread = notifications.where((item) => !item.isRead).toList();
+      if (unread.isEmpty || !mounted) return;
+      setState(() => _hasUnread = true);
+      _alertCtrl.repeat(reverse: true);
+      Future.delayed(const Duration(seconds: 3), () {
+        if (!mounted) return;
+        _alertCtrl.stop();
+        _alertCtrl.reset();
+      });
+      AppNotification? stockAlert;
+      for (final item in unread) {
+        if (item.type == 'stock.low') {
+          stockAlert = item;
+          break;
+        }
+      }
+      await _playNotificationSoundFor(
+        type: stockAlert?.type ?? unread.first.type,
+        body: stockAlert?.body ?? unread.first.body ?? '',
+      );
+    } catch (error) {
+      debugPrint('Unread notification check failed: $error');
+    }
+  }
+
+  Future<void> _playNotificationSoundFor({
+    required String type,
+    required String body,
+  }) async {
     try {
       if (!_settingsLoadedForSound) {
         _settingsLoadedForSound = true;
         await settingsPreferencesService.load();
       }
-      await soundService.playSelectedTone();
+      if (type == 'stock.low') {
+        await soundService.triggerVoiceAlert(_stockAlertProductName(body));
+      } else {
+        await soundService.playSelectedTone();
+      }
     } catch (error) {
       debugPrint('Notification sound failed: $error');
     }
+  }
+
+  String _stockAlertProductName(String body) {
+    const marker = ' is now at ';
+    final index = body.indexOf(marker);
+    if (index > 0) return body.substring(0, index).trim();
+    return 'stock item';
   }
 
   void _showTopToast({required String title, required String body}) {
@@ -1065,6 +1105,19 @@ class HeroProductCard extends StatelessWidget {
   }
 }
 
+int _productStockQty(Product product) {
+  final stockText = product.stock.toLowerCase();
+  if (stockText.contains('out')) return 0;
+  final match = RegExp(r'\d+').firstMatch(stockText);
+  return int.tryParse(match?.group(0) ?? '') ?? 0;
+}
+
+String _productStockLabel(Product product) {
+  final stock = _productStockQty(product);
+  if (stock <= 0) return 'Out of stock';
+  return stock == 1 ? '1 left' : '$stock left';
+}
+
 class PremiumProductCard extends StatelessWidget {
   const PremiumProductCard({
     super.key,
@@ -1076,6 +1129,8 @@ class PremiumProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final stockQty = _productStockQty(product);
+    final outOfStock = stockQty <= 0;
     return RepaintBoundary(
       child: SizedBox(
         width: 150,
@@ -1167,9 +1222,9 @@ class PremiumProductCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          product.stock,
-                          style: const TextStyle(
-                            color: ink,
+                          _productStockLabel(product),
+                          style: TextStyle(
+                            color: outOfStock ? Colors.redAccent : ink,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1178,12 +1233,14 @@ class PremiumProductCard extends StatelessWidget {
                       SizedBox(
                         height: 32,
                         width: 72,
-                        child: GradientButton(
-                          'Buy',
-                          Icons.shopping_cart,
-                          () => openProductCheckout(context, product),
-                          compact: true,
-                        ),
+                        child: outOfStock
+                            ? _OutOfStockPill(compact: true)
+                            : GradientButton(
+                                'Buy',
+                                Icons.shopping_cart,
+                                () => openProductCheckout(context, product),
+                                compact: true,
+                              ),
                       ),
                     ],
                   ),
@@ -1191,6 +1248,35 @@ class PremiumProductCard extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OutOfStockPill extends StatelessWidget {
+  const _OutOfStockPill({this.compact = false});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 10),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withValues(alpha: .10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: .24)),
+      ),
+      child: Text(
+        compact ? 'Out' : 'Out of stock',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: Colors.redAccent,
+          fontSize: compact ? 10 : 11,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );
@@ -1213,9 +1299,9 @@ class ProductCardGrid extends StatelessWidget {
             itemCount: products.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 18,
-              childAspectRatio: constraints.maxWidth > 720 ? .58 : .43,
+              crossAxisSpacing: constraints.maxWidth > 720 ? 16 : 12,
+              mainAxisSpacing: constraints.maxWidth > 720 ? 18 : 14,
+              childAspectRatio: constraints.maxWidth > 720 ? .60 : .50,
             ),
             itemBuilder: (context, index) =>
                 LargeProductCard(product: products[index]),
@@ -1232,6 +1318,8 @@ class LargeProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final stockQty = _productStockQty(product);
+    final outOfStock = stockQty <= 0;
     return RepaintBoundary(
       child: Card(
         margin: EdgeInsets.zero,
@@ -1332,9 +1420,9 @@ class LargeProductCard extends StatelessWidget {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(999),
                   child: LinearProgressIndicator(
-                    value: product.id == 'prod-2' ? .18 : .72,
+                    value: outOfStock ? 0 : (stockQty / 10).clamp(.08, 1.0),
                     minHeight: 5,
-                    color: primary,
+                    color: outOfStock ? Colors.redAccent : primary,
                     backgroundColor: const Color(0xFFE2E8F0),
                   ),
                 ),
@@ -1343,11 +1431,11 @@ class LargeProductCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        product.stock,
+                        _productStockLabel(product),
                         maxLines: 2,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: ink,
+                          color: outOfStock ? Colors.redAccent : ink,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1355,12 +1443,14 @@ class LargeProductCard extends StatelessWidget {
                     SizedBox(
                       height: 40,
                       width: 76,
-                      child: GradientButton(
-                        'Buy',
-                        Icons.shopping_cart,
-                        () => openProductCheckout(context, product),
-                        compact: true,
-                      ),
+                      child: outOfStock
+                          ? const _OutOfStockPill(compact: true)
+                          : GradientButton(
+                              'Buy',
+                              Icons.shopping_cart,
+                              () => openProductCheckout(context, product),
+                              compact: true,
+                            ),
                     ),
                   ],
                 ),
