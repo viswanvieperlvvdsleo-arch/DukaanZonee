@@ -2,7 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import { query } from '../db/pool.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { publishToRole } from '../realtime/socketHub.js';
+import { publishToRole, publishToUser } from '../realtime/socketHub.js';
 import { HttpError } from '../utils/httpError.js';
 import {
   buildUpiQrPayload,
@@ -178,7 +178,7 @@ sellerRouter.patch('/payment-profile', async (req, res, next) => {
     } else if (input.paymentQrPayload !== undefined && input.paymentQrPayload.trim() !== '') {
       paymentQrPayload = normalizeQrPayload(input.paymentQrPayload);
       paymentQrFingerprint = makeQrFingerprint(paymentQrPayload);
-      upiId = input.upiId ?? extractUpiId(paymentQrPayload);
+      upiId = input.upiId?.trim() || extractUpiId(paymentQrPayload);
     } else if (upiId && !shop.payment_qr_payload) {
       paymentQrPayload = buildUpiQrPayload(upiId, shop.name);
       paymentQrFingerprint = makeQrFingerprint(paymentQrPayload);
@@ -486,7 +486,7 @@ sellerRouter.get('/b2b/partners', async (req, res, next) => {
     const search = input.q ? `%${input.q.toLowerCase()}%` : null;
     const result = await query(
       `SELECT s.id AS shop_id, s.name AS shop_name, s.category, s.block,
-        s.address, s.avatar_url, s.upi_id,
+        s.address, s.latitude, s.longitude, s.avatar_url, s.upi_id, s.map_url,
         u.id AS seller_id, u.name AS owner_name, u.email, u.phone, u.profile_pic
        FROM shops s
        INNER JOIN app_users u ON u.id = s.seller_id
@@ -517,6 +517,9 @@ sellerRouter.get('/b2b/partners', async (req, res, next) => {
         category: row.category,
         block: row.block,
         address: row.address,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        mapUrl: row.map_url,
         email: row.email,
         phone: row.phone,
         upiId: row.upi_id,
@@ -602,7 +605,7 @@ sellerRouter.patch('/shop', async (req, res, next) => {
     } else if (input.paymentQrPayload !== undefined && input.paymentQrPayload.trim() !== '') {
       paymentQrPayload = normalizeQrPayload(input.paymentQrPayload);
       paymentQrFingerprint = makeQrFingerprint(paymentQrPayload);
-      upiId = input.upiId ?? extractUpiId(paymentQrPayload);
+      upiId = input.upiId?.trim() || extractUpiId(paymentQrPayload);
     } else if (upiId && !shop.payment_qr_payload) {
       paymentQrPayload = buildUpiQrPayload(upiId, nextShopName);
       paymentQrFingerprint = makeQrFingerprint(paymentQrPayload);
@@ -810,11 +813,15 @@ sellerRouter.post('/items', async (req, res, next) => {
       ],
     );
 
-    publishToRole('user', 'stock.updated', {
+    const stockPayload = {
       shopId: shop.id,
       sellerId: req.user.sub,
       itemIds: [result.rows[0].id],
-    });
+      reason: 'seller_inventory_created',
+    };
+    publishToRole('user', 'stock.updated', stockPayload);
+    publishToRole('admin', 'stock.updated', stockPayload);
+    publishToUser(req.user.sub, 'stock.updated', stockPayload);
 
     res.status(201).json({ item: result.rows[0] });
   } catch (error) {
@@ -862,11 +869,15 @@ sellerRouter.patch('/items/:itemId', async (req, res, next) => {
       ],
     );
 
-    publishToRole('user', 'stock.updated', {
+    const stockPayload = {
       shopId: item.shop_id,
       sellerId: req.user.sub,
       itemIds: [item.id],
-    });
+      reason: 'seller_inventory_updated',
+    };
+    publishToRole('user', 'stock.updated', stockPayload);
+    publishToRole('admin', 'stock.updated', stockPayload);
+    publishToUser(req.user.sub, 'stock.updated', stockPayload);
 
     res.json({ item: result.rows[0] });
   } catch (error) {
@@ -883,11 +894,15 @@ sellerRouter.delete('/items/:itemId', async (req, res, next) => {
 
     await query('DELETE FROM shelf_items WHERE id = $1', [item.id]);
 
-    publishToRole('user', 'stock.updated', {
+    const stockPayload = {
       shopId: item.shop_id,
       sellerId: req.user.sub,
       itemIds: [item.id],
-    });
+      reason: 'seller_inventory_deleted',
+    };
+    publishToRole('user', 'stock.updated', stockPayload);
+    publishToRole('admin', 'stock.updated', stockPayload);
+    publishToUser(req.user.sub, 'stock.updated', stockPayload);
 
     res.status(204).send();
   } catch (error) {

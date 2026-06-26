@@ -43,6 +43,8 @@ const statements = [
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS payment_qr_payload TEXT`,
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS payment_qr_fingerprint TEXT`,
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS upi_id TEXT`,
+  `ALTER TABLE shops ADD COLUMN IF NOT EXISTS latitude NUMERIC(10, 7)`,
+  `ALTER TABLE shops ADD COLUMN IF NOT EXISTS longitude NUMERIC(10, 7)`,
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS payout_status TEXT NOT NULL DEFAULT 'sandbox_ready'`,
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS gateway_provider TEXT NOT NULL DEFAULT 'mock_gateway'`,
   `ALTER TABLE shops ADD COLUMN IF NOT EXISTS gateway_account_id TEXT`,
