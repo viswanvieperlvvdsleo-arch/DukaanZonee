@@ -12,6 +12,7 @@ import { paymentSessionsRouter } from './routes/paymentSessions.routes.js';
 import { sellerRouter } from './routes/seller.routes.js';
 import { settingsRouter } from './routes/settings.routes.js';
 import { supportRouter } from './routes/support.routes.js';
+import { query } from './db/pool.js';
 import { HttpError } from './utils/httpError.js';
 
 export function createApp() {
@@ -37,6 +38,15 @@ export function createApp() {
     res.json({ ok: true, service: 'dukaanzone-backend' });
   });
 
+  app.get('/health/db', async (_req, res, next) => {
+    try {
+      await query('SELECT 1');
+      res.json({ ok: true, service: 'dukaanzone-backend', database: 'connected' });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.use('/api/auth', authRouter);
   app.use('/api/admin', adminRouter);
   app.use('/api/chats', chatsRouter);
@@ -52,6 +62,14 @@ export function createApp() {
   });
 
   app.use((error, _req, res, _next) => {
+    const databaseError = mapDatabaseError(error);
+    if (databaseError) {
+      return res.status(databaseError.status).json({
+        error: databaseError.message,
+        details: databaseError.details,
+      });
+    }
+
     if (error?.name === 'ZodError') {
       return res.status(400).json({
         error: 'Validation failed',
@@ -73,6 +91,57 @@ export function createApp() {
   });
 
   return app;
+}
+
+function mapDatabaseError(error) {
+  if (!error?.code) return null;
+
+  if (error.code === '23505') {
+    const constraint = error.constraint ?? '';
+    if (
+      constraint.includes('payment_qr') ||
+      constraint.includes('upi_id') ||
+      constraint.includes('shops_payment_qr') ||
+      constraint.includes('shops_upi')
+    ) {
+      return {
+        status: 409,
+        message: 'Payment QR or UPI ID already linked to another shop',
+        details: { constraint },
+      };
+    }
+
+    return {
+      status: 409,
+      message: 'This record already exists',
+      details: { constraint },
+    };
+  }
+
+  if (error.code === '42703' || error.code === '42P01') {
+    return {
+      status: 503,
+      message: 'Database schema is not ready. Restart or redeploy the backend so migrations run.',
+      details: { code: error.code },
+    };
+  }
+
+  if (
+    error.code === 'ECONNREFUSED' ||
+    error.code === 'ENOTFOUND' ||
+    error.code === 'ETIMEDOUT' ||
+    error.code === '28P01' ||
+    error.code === '3D000' ||
+    error.code === '57P03'
+  ) {
+    return {
+      status: 503,
+      message: 'Database is not reachable. Check Render DATABASE_URL and PostgreSQL service.',
+      details: { code: error.code },
+    };
+  }
+
+  return null;
 }
 
 function isLocalDevOrigin(origin) {
