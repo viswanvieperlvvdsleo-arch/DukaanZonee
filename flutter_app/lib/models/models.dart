@@ -67,6 +67,24 @@ class Product {
   final String? promotionId;
 }
 
+class ShopShelfItem {
+  const ShopShelfItem({
+    required this.id,
+    required this.name,
+    this.category,
+    this.barcode,
+    this.stockQty = 0,
+    this.priceCents = 0,
+  });
+
+  final String id;
+  final String name;
+  final String? category;
+  final String? barcode;
+  final int stockQty;
+  final int priceCents;
+}
+
 class Shop {
   const Shop(
     this.name,
@@ -87,6 +105,7 @@ class Shop {
     this.ratingValue = 0,
     this.isFollowing = false,
     this.sellerId,
+    this.items = const [],
   });
   final String name;
   final String block;
@@ -106,6 +125,7 @@ class Shop {
   final double ratingValue;
   final bool isFollowing;
   final String? sellerId;
+  final List<ShopShelfItem> items;
 }
 
 class Stat {

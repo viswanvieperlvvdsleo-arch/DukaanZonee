@@ -12,7 +12,10 @@ class ActiveHandshakesPage extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: const IconThemeData(color: ink),
-        title: const Text('Active Handshakes', style: TextStyle(color: ink, fontWeight: FontWeight.w900)),
+        title: const Text(
+          'Active Handshakes',
+          style: TextStyle(color: ink, fontWeight: FontWeight.w900),
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -20,55 +23,34 @@ class ActiveHandshakesPage extends StatelessWidget {
         children: [
           const Kicker('READY FOR PICKUP'),
           const SizedBox(height: 16),
-          _buildTokenCard(context, 'Pooja General Store', 'Fresh Organic Bananas (Dozen)', '₹60.00', '10 mins ago'),
-          const SizedBox(height: 16),
-          _buildTokenCard(context, 'Tech Haven', 'Noise Cancelling Earbuds', '₹12,499.00', '2 hours ago'),
+          _buildEmptyState(context),
         ],
       ),
     );
   }
 
-  Widget _buildTokenCard(BuildContext context, String shop, String item, String price, String time) {
+  Widget _buildEmptyState(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: shadowSm,
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(shop, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: primary)),
-              Text(time, style: const TextStyle(color: muted, fontSize: 12, fontWeight: FontWeight.w600)),
-            ],
+          Icon(Icons.qr_code_2, size: 64, color: muted.withOpacity(0.45)),
+          const SizedBox(height: 14),
+          const Text(
+            'No active payment handshakes yet.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight.w900, color: ink),
           ),
           const SizedBox(height: 8),
-          Text(item, style: const TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          Text(price, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-          const SizedBox(height: 24),
-          Center(
-            child: Column(
-              children: [
-                const Icon(Icons.qr_code_2, size: 120, color: ink),
-                const SizedBox(height: 12),
-                const Text('Show this code to the merchant', style: TextStyle(color: muted, fontSize: 12, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.share_outlined, size: 16),
-                  label: const Text('Share Code'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ],
-            ),
+          const Text(
+            'Paid checkout tokens will appear here from backend payment sessions.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: muted, fontWeight: FontWeight.w600),
           ),
         ],
       ),

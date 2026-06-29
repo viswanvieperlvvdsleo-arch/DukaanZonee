@@ -1775,71 +1775,25 @@ class SellerProductDetailPage extends StatelessWidget {
   }
 
   Widget _buildReviewList() {
-    final reviews = [
-      {
-        'user': 'Aryan M.',
-        'date': 'Today',
-        'text': 'Super fresh and sweet! Best in the neighborhood.',
-        'stars': 5,
-      },
-      {
-        'user': 'Priya S.',
-        'date': 'Yesterday',
-        'text': 'Delivery was fast but packaging could be better.',
-        'stars': 4,
-      },
-      {
-        'user': 'Rahul K.',
-        'date': '2 days ago',
-        'text': 'Always reliable quality. My go-to for apples.',
-        'stars': 5,
-      },
-    ];
-
-    return Column(
-      children: reviews
-          .map(
-            (r) => Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: primary.withOpacity(0.05)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        r['user'] as String,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 13,
-                        ),
-                      ),
-                      Text(
-                        r['date'] as String,
-                        style: const TextStyle(
-                          color: muted,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    r['text'] as String,
-                    style: const TextStyle(fontSize: 13, height: 1.4),
-                  ),
-                ],
-              ),
-            ),
-          )
-          .toList(),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: primary.withOpacity(0.05)),
+      ),
+      child: const Column(
+        children: [
+          Icon(Icons.rate_review_outlined, color: muted, size: 34),
+          SizedBox(height: 10),
+          Text(
+            'No backend reviews for this item yet.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: muted, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
     );
   }
 }

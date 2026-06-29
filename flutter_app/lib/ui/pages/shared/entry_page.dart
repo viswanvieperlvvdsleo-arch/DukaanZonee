@@ -82,9 +82,8 @@ class _EntryPageState extends State<EntryPage> {
     return Column(
       children: [
         const Spacer(),
-        const Brand(size: 96),
+        const BrandLockup(markSize: 82),
         const SizedBox(height: 26),
-        const Text('DukaanZone', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: ink, letterSpacing: -.5)),
         const SizedBox(height: 8),
         const Text(
           'Connecting the world through local shopkeepers.',

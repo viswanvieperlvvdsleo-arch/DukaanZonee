@@ -31,6 +31,7 @@ const registerSellerSchema = registerUserSchema
     address: z.string().trim().max(240).optional(),
     latitude: z.number().min(-90).max(90).optional(),
     longitude: z.number().min(-180).max(180).optional(),
+    mapUrl: z.string().trim().max(1200).optional(),
     paymentQrPayload: z.string().trim().max(2000).optional(),
     upiId: z.string().trim().max(120).optional(),
   })
@@ -155,12 +156,12 @@ authRouter.post('/register/seller', async (req, res, next) => {
         `INSERT INTO shops (
           id, seller_id, name, category, block, address,
           latitude, longitude, qr_code, qr_payload,
-          payment_qr_payload, payment_qr_fingerprint, upi_id
+          payment_qr_payload, payment_qr_fingerprint, upi_id, map_url
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING id, seller_id, name, category, block, address,
           latitude, longitude, qr_code, qr_payload,
-          payment_qr_payload, payment_qr_fingerprint, upi_id, is_open`,
+          payment_qr_payload, payment_qr_fingerprint, upi_id, map_url, is_open`,
         [
           shopId,
           sellerId,
@@ -175,6 +176,7 @@ authRouter.post('/register/seller', async (req, res, next) => {
           paymentQrPayload,
           paymentQrFingerprint,
           upiId,
+          input.mapUrl ?? null,
         ],
       );
 

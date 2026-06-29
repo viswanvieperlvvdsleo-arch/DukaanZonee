@@ -132,13 +132,35 @@ class _UserScanPageState extends State<UserScanPage> {
         ),
         const SizedBox(height: 18),
 
-        // Simulation / Manual Entry Section
-        Row(
-          children: [
-            const Expanded(
-              child: SectionHeader('Detected Shop', 'Paste test QR payload'),
-            ),
-            TextButton.icon(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 420;
+            final title = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Text(
+                  'Manual QR fallback',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    color: ink,
+                  ),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'Use only if camera is blocked',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: primary,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            );
+            final action = TextButton.icon(
               onPressed: _resolving
                   ? null
                   : () => _resolvePaymentQr(_manualQrController.text),
@@ -147,10 +169,33 @@ class _UserScanPageState extends State<UserScanPage> {
                 'Resolve QR',
                 style: TextStyle(fontWeight: FontWeight.w900),
               ),
-              style: TextButton.styleFrom(foregroundColor: primary),
-            ),
-          ],
+              style: TextButton.styleFrom(
+                foregroundColor: primary,
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+              ),
+            );
+
+            if (compact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  title,
+                  const SizedBox(height: 8),
+                  Align(alignment: Alignment.centerRight, child: action),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: title),
+                const SizedBox(width: 12),
+                action,
+              ],
+            );
+          },
         ),
+        const SizedBox(height: 8),
         TextField(
           controller: _manualQrController,
           minLines: 1,
@@ -173,36 +218,13 @@ class _UserScanPageState extends State<UserScanPage> {
         ),
         const SizedBox(height: 12),
         const Text(
-          'Camera scan will pass the real QR value automatically. Manual paste is only a fallback when camera access is blocked during local browser testing.',
+          'Camera scan resolves the seller QR automatically. If a browser blocks camera access, paste the real UPI QR payload here and resolve it.',
           style: TextStyle(
             color: muted,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 12),
-        for (final s in shops.take(3))
-          RepaintBoundary(
-            child: ListTile(
-              onTap: () {
-                _manualQrController.text =
-                    'upi://pay?pa=${s.name.toLowerCase().replaceAll(' ', '')}@upi&pn=${Uri.encodeComponent(s.name)}&cu=INR';
-              },
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xFFF4F6F8),
-                child: Icon(Icons.storefront, color: ink),
-              ),
-              title: Text(
-                s.name,
-                style: const TextStyle(fontWeight: FontWeight.w900, color: ink),
-              ),
-              subtitle: const Text(
-                'Fill sample QR payload',
-                style: TextStyle(color: muted, fontSize: 12),
-              ),
-              trailing: const Icon(Icons.edit_outlined, color: muted),
-            ),
-          ),
       ],
     );
   }
@@ -233,7 +255,7 @@ class _UserScanPageState extends State<UserScanPage> {
             'Camera permission is blocked or unavailable. Allow camera access for DukaanZone and retry the live scanner.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.6),
+              color: Colors.white.withValues(alpha: 0.6),
               fontSize: 13,
               height: 1.45,
             ),
@@ -244,7 +266,7 @@ class _UserScanPageState extends State<UserScanPage> {
               _errorMessage,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.45),
+                color: Colors.white.withValues(alpha: 0.45),
                 fontSize: 11,
               ),
             ),

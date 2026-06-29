@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
-import 'dart:js' as js;
+
+import 'sound_web_bridge_stub.dart'
+    if (dart.library.html) 'sound_web_bridge_web.dart';
 
 class SoundService {
   static final SoundService _instance = SoundService._internal();
@@ -51,72 +52,7 @@ class SoundService {
     await _tts.setPitch(1.0);
     await _tts.setSpeechRate(0.5);
 
-    // Inject Web Audio API Synthesizer on Web to produce actual instrument/synth tones offline
-    if (kIsWeb) {
-      try {
-        js.context.callMethod('eval', [
-          """
-          window.dukaanZoneSynth = function(toneName) {
-            try {
-              var AudioContext = window.AudioContext || window.webkitAudioContext;
-              if (!AudioContext) return;
-              var ctx = new AudioContext();
-              
-              function playTone(freq, type, duration, delay) {
-                setTimeout(function() {
-                  var osc = ctx.createOscillator();
-                  var gain = ctx.createGain();
-                  osc.type = type;
-                  osc.frequency.value = freq;
-                  
-                  gain.gain.setValueAtTime(0.15, ctx.currentTime);
-                  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-                  
-                  osc.connect(gain);
-                  gain.connect(ctx.destination);
-                  
-                  osc.start();
-                  osc.stop(ctx.currentTime + duration);
-                }, delay * 1000);
-              }
-              
-              if (toneName === 'Default Chime') {
-                playTone(523.25, 'sine', 0.3, 0.0); // C5
-                playTone(659.25, 'sine', 0.3, 0.12); // E5
-                playTone(784.00, 'sine', 0.5, 0.24); // G5
-              } else if (toneName === 'Cash Register') {
-                playTone(1500, 'sine', 0.08, 0.0);
-                playTone(2200, 'sine', 0.3, 0.05);
-              } else if (toneName === 'Digital Beep') {
-                playTone(1000, 'square', 0.08, 0.0);
-                playTone(1000, 'square', 0.08, 0.15);
-              } else if (toneName === 'Success Ping') {
-                playTone(440, 'sine', 0.08, 0.0);
-                playTone(554, 'sine', 0.08, 0.06);
-                playTone(659, 'sine', 0.08, 0.12);
-                playTone(880, 'sine', 0.25, 0.18);
-              } else if (toneName === 'Alert Siren') {
-                playTone(800, 'sawtooth', 0.12, 0.0);
-                playTone(600, 'sawtooth', 0.12, 0.12);
-                playTone(800, 'sawtooth', 0.12, 0.24);
-                playTone(600, 'sawtooth', 0.12, 0.36);
-              } else if (toneName === 'Soft Pop') {
-                playTone(300, 'triangle', 0.15, 0.0);
-              } else if (toneName === 'Vroom Engine') {
-                playTone(65, 'sawtooth', 0.25, 0.0);
-                playTone(85, 'sawtooth', 0.2, 0.08);
-                playTone(110, 'sawtooth', 0.3, 0.16);
-              }
-            } catch (e) {
-              console.error(e);
-            }
-          };
-        """,
-        ]);
-      } catch (e) {
-        print("Failed to inject JS synthesizer: $e");
-      }
-    }
+    initWebSynth();
   }
 
   /// General TTS speaker method
@@ -129,14 +65,9 @@ class SoundService {
     final tone = selectedTone.value;
     if (tone == 'Silent') return;
 
-    // 1. Try playing Web Audio API synthesized instrument tones on Web
-    if (kIsWeb) {
-      try {
-        js.context.callMethod('dukaanZoneSynth', [tone]);
-        return; // Played successfully!
-      } catch (e) {
-        print("Failed to play Web Audio: $e. Falling back to native player.");
-      }
+    // 1. Try playing Web Audio API synthesized instrument tones on Web.
+    if (playWebSynth(tone)) {
+      return;
     }
 
     // 2. Play Mobile/Native sound (falls back to native file or system alert)

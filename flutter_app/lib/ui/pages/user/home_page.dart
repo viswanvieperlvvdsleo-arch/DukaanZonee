@@ -191,6 +191,13 @@ class _PromotedProductSlide extends StatelessWidget {
 
   final Product product;
 
+  int _stockQty() {
+    final text = product.stock.toLowerCase();
+    if (text.contains('out')) return 0;
+    final match = RegExp(r'\d+').firstMatch(text);
+    return int.tryParse(match?.group(0) ?? '') ?? 0;
+  }
+
   void _trackClick() {
     final promotionId = product.promotionId;
     if (promotionId == null || promotionId.isEmpty) return;
@@ -199,6 +206,7 @@ class _PromotedProductSlide extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final outOfStock = _stockQty() <= 0;
     return InkWell(
       borderRadius: BorderRadius.circular(34),
       onTap: () {
@@ -297,6 +305,7 @@ class _PromotedProductSlide extends StatelessWidget {
                     child: SizedBox(
                       width: 124,
                       child: FrostedBuyButton(
+                        enabled: !outOfStock,
                         onTap: () {
                           _trackClick();
                           openProductCheckout(context, product);

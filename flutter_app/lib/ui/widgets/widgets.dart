@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io' show File;
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 
 class ProductImageView extends StatelessWidget {
@@ -1299,9 +1300,9 @@ class ProductCardGrid extends StatelessWidget {
             itemCount: products.length,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              crossAxisSpacing: constraints.maxWidth > 720 ? 16 : 12,
-              mainAxisSpacing: constraints.maxWidth > 720 ? 18 : 14,
-              childAspectRatio: constraints.maxWidth > 720 ? .60 : .50,
+              crossAxisSpacing: constraints.maxWidth > 720 ? 16 : 10,
+              mainAxisSpacing: constraints.maxWidth > 720 ? 18 : 12,
+              childAspectRatio: constraints.maxWidth > 720 ? .66 : .48,
             ),
             itemBuilder: (context, index) =>
                 LargeProductCard(product: products[index]),
@@ -1399,7 +1400,7 @@ class LargeProductCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'Sold by ${product.shop}',
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Color(0xFF64748B),
@@ -1432,7 +1433,8 @@ class LargeProductCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         _productStockLabel(product),
-                        maxLines: 2,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
                           color: outOfStock ? Colors.redAccent : ink,
@@ -2215,27 +2217,37 @@ class Brand extends StatelessWidget {
   const Brand({super.key, required this.size});
   final double size;
   @override
-  Widget build(BuildContext context) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(size * .32),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: .08),
-          blurRadius: 18,
-          offset: const Offset(0, 8),
+  Widget build(BuildContext context) => SizedBox.square(
+        dimension: size,
+        child: SvgPicture.asset(
+          'assets/brand/dukaanzone_mark.svg',
+          fit: BoxFit.contain,
+          semanticsLabel: 'DukaanZone logo',
         ),
-      ],
-    ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(size * .32),
-      child: Image.asset(
-        'logo/ChatGPT Image May 24, 2026, 04_38_37 PM.png',
-        fit: BoxFit.cover,
+      );
+}
+
+class BrandLockup extends StatelessWidget {
+  const BrandLockup({super.key, this.markSize = 76, this.compact = false});
+
+  final double markSize;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = compact ? markSize * 3.5 : markSize * 5.9;
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: SizedBox(
+        width: width,
+        child: SvgPicture.asset(
+          'assets/brand/dukaanzone_logo.svg',
+          fit: BoxFit.contain,
+          semanticsLabel: 'DukaanZone wordmark logo',
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class BadgeText extends StatelessWidget {
@@ -2276,25 +2288,30 @@ class SearchToken extends StatelessWidget {
 }
 
 class FrostedBuyButton extends StatelessWidget {
-  const FrostedBuyButton({super.key, required this.onTap});
+  const FrostedBuyButton({super.key, required this.onTap, this.enabled = true});
   final VoidCallback onTap;
+  final bool enabled;
   @override
   Widget build(BuildContext context) => InkWell(
-    onTap: onTap,
+    onTap: enabled ? onTap : null,
     borderRadius: BorderRadius.circular(24),
     child: Container(
       height: 50,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: .72),
+        color: Colors.white.withValues(alpha: enabled ? .72 : .42),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(color: Colors.white.withValues(alpha: .25), blurRadius: 14),
         ],
       ),
-      child: const Text(
-        'Buy',
-        style: TextStyle(color: ink, fontWeight: FontWeight.w900, fontSize: 16),
+      child: Text(
+        enabled ? 'Buy' : 'Out',
+        style: TextStyle(
+          color: enabled ? ink : muted,
+          fontWeight: FontWeight.w900,
+          fontSize: 16,
+        ),
       ),
     ),
   );

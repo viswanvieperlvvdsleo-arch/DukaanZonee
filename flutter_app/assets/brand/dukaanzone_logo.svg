@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 720" role="img" aria-labelledby="title desc">
+  <title id="title">DukaanZone logo</title>
+  <desc id="desc">DukaanZone DZ monogram and wordmark in steel blue and deep navy.</desc>
+  <defs>
+    <linearGradient id="dzLight" x1="244" y1="66" x2="552" y2="454" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8FA5C4"/>
+      <stop offset="0.5" stop-color="#5D7BA0"/>
+      <stop offset="1" stop-color="#3D5070"/>
+    </linearGradient>
+    <linearGradient id="dzDark" x1="545" y1="68" x2="756" y2="452" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3D5070"/>
+      <stop offset="0.56" stop-color="#2E3D55"/>
+      <stop offset="1" stop-color="#1E2D40"/>
+    </linearGradient>
+    <linearGradient id="wordLight" x1="120" y1="575" x2="570" y2="665" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8FA5C4"/>
+      <stop offset="0.48" stop-color="#5D7BA0"/>
+      <stop offset="1" stop-color="#3D5070"/>
+    </linearGradient>
+    <linearGradient id="wordDark" x1="575" y1="575" x2="870" y2="662" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3D5070"/>
+      <stop offset="0.5" stop-color="#2E3D55"/>
+      <stop offset="1" stop-color="#1E2D40"/>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(180 20)">
+    <path fill="#1E2D40" opacity="0.14" d="M57 474h155c113 0 203-88 203-215S325 44 212 44H57v430Zm93-90V134h62c64 0 113 53 113 125s-49 125-113 125h-62Zm230 89h205v-89H484L585 118V44H382l76 52h42L363 274l-77 95 94-17-54 121h54Z"/>
+    <path fill="url(#dzLight)" fill-rule="evenodd" d="M42 458h160c112 0 203-89 203-210S314 38 202 38H42v420Zm92-88V126h70c61 0 110 55 110 122s-49 122-110 122h-70Z"/>
+    <path fill="url(#dzDark)" d="M374 38h216v86L486 370h104v88H372l113-135 6-7 99-190H472l-98-88Z"/>
+    <path fill="#FFFFFF" d="M278 458c72-62 155-160 253-302h-62c-66 92-124 164-174 216-35 36-67 64-96 86h79Z"/>
+    <path fill="#FFFFFF" opacity="0.38" d="M56 52h146c105 0 188 82 188 196h-14c0-105-77-182-174-182H70v382H56V52Zm330 0h190v14H422l50 44h-23l-63-58Z"/>
+  </g>
+
+  <text x="58" y="650" font-family="Montserrat, Poppins, Arial, sans-serif" font-size="104" font-weight="900" letter-spacing="7">
+    <tspan fill="url(#wordLight)">DUKAAN</tspan><tspan fill="url(#wordDark)">ZONE</tspan>
+  </text>
+</svg>

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 520" role="img" aria-labelledby="title desc">
+  <title id="title">DukaanZone DZ mark</title>
+  <desc id="desc">A beveled DZ monogram in steel blue and deep navy.</desc>
+  <defs>
+    <linearGradient id="dzLight" x1="68" y1="34" x2="395" y2="462" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8FA5C4"/>
+      <stop offset="0.48" stop-color="#6F8CB1"/>
+      <stop offset="1" stop-color="#3D5070"/>
+    </linearGradient>
+    <linearGradient id="dzDark" x1="366" y1="40" x2="584" y2="462" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3D5070"/>
+      <stop offset="0.54" stop-color="#2E3D55"/>
+      <stop offset="1" stop-color="#1E2D40"/>
+    </linearGradient>
+    <linearGradient id="dzEdge" x1="46" y1="36" x2="580" y2="460" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.72"/>
+      <stop offset="0.48" stop-color="#FFFFFF" stop-opacity="0.14"/>
+      <stop offset="1" stop-color="#1E2D40" stop-opacity="0.38"/>
+    </linearGradient>
+  </defs>
+
+  <path fill="#1E2D40" opacity="0.16" d="M57 474h155c113 0 203-88 203-215S325 44 212 44H57v430Zm93-90V134h62c64 0 113 53 113 125s-49 125-113 125h-62Zm230 89h205v-89H484L585 118V44H382l76 52h42L363 274l-77 95 94-17-54 121h54Z"/>
+
+  <path fill="url(#dzLight)" fill-rule="evenodd" d="M42 458h160c112 0 203-89 203-210S314 38 202 38H42v420Zm92-88V126h70c61 0 110 55 110 122s-49 122-110 122h-70Z"/>
+
+  <path fill="url(#dzDark)" d="M374 38h216v86L486 370h104v88H372l113-135 6-7 99-190H472l-98-88Z"/>
+
+  <path fill="#FFFFFF" d="M278 458c72-62 155-160 253-302h-62c-66 92-124 164-174 216-35 36-67 64-96 86h79Z"/>
+  <path fill="url(#dzEdge)" fill-rule="evenodd" d="M48 44h154c109 0 196 86 196 204 0 119-87 204-196 204H48V44Zm86 326V126h70c61 0 110 55 110 122s-49 122-110 122h-70Zm252-320h198v72L480 370h104v76H386l105-126 101-194H472L386 50Z" opacity="0.8"/>
+</svg>

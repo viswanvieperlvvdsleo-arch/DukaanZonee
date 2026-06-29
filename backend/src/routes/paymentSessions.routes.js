@@ -440,11 +440,15 @@ paymentSessionsRouter.post('/complete', requireAuth, async (req, res, next) => {
     publishToUser(result.shop.seller_id, 'payment.completed', payload);
     publishToUser(req.user.sub, 'payment.completed', payload);
     publishToRole('admin', 'payment.completed', payload);
-    publishToRole('user', 'stock.updated', {
+    const stockPayload = {
       shopId: result.shop.id,
       sellerId: result.shop.seller_id,
       itemIds: result.items.map((item) => item.shelfItemId),
-    });
+      reason: 'payment_completed',
+    };
+    publishToRole('user', 'stock.updated', stockPayload);
+    publishToRole('admin', 'stock.updated', stockPayload);
+    publishToUser(result.shop.seller_id, 'stock.updated', stockPayload);
     publishToUsers(
       [result.shop.seller_id, req.user.sub],
       'chat.message',

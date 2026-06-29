@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 
 enum SellerAuthStep { login, register }
@@ -24,6 +25,9 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
 
   bool _loading = false;
   bool _showPassword = false;
+  double? _selectedLatitude;
+  double? _selectedLongitude;
+  String? _selectedMapUrl;
 
   @override
   void initState() {
@@ -82,6 +86,9 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
       category: _selectedCategory,
       block: _selectedBlock,
       address: _addressController.text,
+      latitude: _selectedLatitude,
+      longitude: _selectedLongitude,
+      mapUrl: _selectedMapUrl,
       paymentQrPayload: _paymentQrController.text,
       upiId: _upiIdController.text,
     );
@@ -157,6 +164,159 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
     );
     if (result == null || !mounted) return;
     _applyPaymentValue(result);
+  }
+
+  LatLng? _extractCoordinates(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return null;
+    final direct = RegExp(
+      r'^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$',
+    ).firstMatch(trimmed);
+    final atMarker = RegExp(
+      r'@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)',
+    ).firstMatch(trimmed);
+    final queryMarker = RegExp(
+      r'(?:[?&](?:q|query|ll)=)(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)',
+    ).firstMatch(trimmed);
+    final match = direct ?? atMarker ?? queryMarker;
+    if (match == null) return null;
+    final lat = double.tryParse(match.group(1) ?? '');
+    final lng = double.tryParse(match.group(2) ?? '');
+    if (lat == null || lng == null) return null;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+    return LatLng(lat, lng);
+  }
+
+  void _applyLocationValue(String rawValue) {
+    final value = rawValue.trim();
+    if (value.isEmpty) return;
+    final coordinates = _extractCoordinates(value);
+    _selectedLatitude = coordinates?.latitude;
+    _selectedLongitude = coordinates?.longitude;
+    if (coordinates != null) {
+      _selectedMapUrl =
+          'https://www.google.com/maps/search/?api=1&query=${coordinates.latitude},${coordinates.longitude}';
+      if (_addressController.text.trim().isEmpty ||
+          _addressController.text.startsWith('Pinned map location')) {
+        _addressController.text =
+            'Pinned map location (${coordinates.latitude.toStringAsFixed(5)}, ${coordinates.longitude.toStringAsFixed(5)})';
+      }
+    } else if (value.startsWith('http://') || value.startsWith('https://')) {
+      _selectedMapUrl = value;
+      if (_addressController.text.trim().isEmpty) {
+        _addressController.text = 'Pinned Google Maps location';
+      }
+    } else {
+      _addressController.text = value;
+      _selectedMapUrl =
+          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(value)}';
+    }
+    setState(() {});
+  }
+
+  Future<void> _showLocationChooser() async {
+    final controller = TextEditingController(
+      text: _selectedMapUrl ?? _addressController.text,
+    );
+    final value = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            18,
+            24,
+            MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 22),
+              const Text(
+                'Choose shop location',
+                style: TextStyle(
+                  color: ink,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Paste a Google Maps link, a lat,lng pair, or a readable address. We store this with your shelf so users can route to you.',
+                style: TextStyle(
+                  color: muted,
+                  fontWeight: FontWeight.w700,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: controller,
+                minLines: 2,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  labelText: 'Map link, coordinates, or address',
+                  hintText: '17.72920,83.31500 or Google Maps link',
+                  prefixIcon: const Icon(Icons.map_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () => Navigator.pop(
+                        context,
+                        '17.72920,83.31500',
+                      ),
+                      icon: const Icon(Icons.my_location_outlined),
+                      label: const Text('Use test current'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () => Navigator.pop(context, controller.text),
+                      icon: const Icon(Icons.check_circle_outline),
+                      label: const Text('Save location'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: primary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    controller.dispose();
+    if (value == null || !mounted) return;
+    _applyLocationValue(value);
   }
 
   String _authErrorMessage(String fallback) {
@@ -411,6 +571,36 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
           ),
         ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: _showLocationChooser,
+          icon: const Icon(Icons.add_location_alt_outlined),
+          label: Text(
+            _selectedMapUrl == null ? 'Choose Location' : 'Location Linked',
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: primary,
+            minimumSize: const Size(double.infinity, 50),
+            side: BorderSide(color: primary.withOpacity(0.28)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+        if (_selectedMapUrl != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            _selectedLatitude == null
+                ? 'Map link saved for route/open location.'
+                : 'Pinned: ${_selectedLatitude!.toStringAsFixed(5)}, ${_selectedLongitude!.toStringAsFixed(5)}',
+            style: const TextStyle(
+              color: success,
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
         TextField(
           controller: _upiIdController,

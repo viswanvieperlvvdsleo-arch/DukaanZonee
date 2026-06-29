@@ -7,14 +7,6 @@ class BuyerHistoryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mock data for buyers
-    final List<Map<String, String>> buyers = [
-      {'name': 'Aryan Malhotra', 'count': '5 times', 'last': '2 hours ago'},
-      {'name': 'Priya Singh', 'count': '3 times', 'last': 'Yesterday'},
-      {'name': 'Rahul Verma', 'count': '12 times', 'last': '3 days ago'},
-      {'name': 'Sanya Khan', 'count': '2 times', 'last': '1 week ago'},
-    ];
-
     return AppPage(
       children: [
         Row(
@@ -31,48 +23,29 @@ class BuyerHistoryPage extends StatelessWidget {
 
         const Kicker('LOYAL NEIGHBORS'),
         const SizedBox(height: 12),
-        
-        ...buyers.map((buyer) => _buildBuyerCard(buyer)),
+        _buildEmptyState(),
         const SizedBox(height: 40),
       ],
     );
   }
 
-  Widget _buildBuyerCard(Map<String, String> buyer) {
+  Widget _buildEmptyState() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: shadowSm,
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: const Column(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(color: primary.withOpacity(0.1), shape: BoxShape.circle),
-                child: Center(child: Text(buyer['name']![0], style: const TextStyle(color: primary, fontWeight: FontWeight.w900, fontSize: 18))),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(buyer['name']!, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                  Text(productName, style: const TextStyle(color: muted, fontSize: 12, fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(buyer['count']!, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: ink)),
-              Text('Last: ${buyer['last']}', style: const TextStyle(color: success, fontSize: 10, fontWeight: FontWeight.w900)),
-            ],
+          Icon(Icons.receipt_long_outlined, color: muted, size: 34),
+          SizedBox(height: 12),
+          Text(
+            'Buyer history will appear here after backend payments are completed for this item.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: muted, fontWeight: FontWeight.w800),
           ),
         ],
       ),

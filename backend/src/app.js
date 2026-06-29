@@ -9,6 +9,7 @@ import { chatsRouter } from './routes/chats.routes.js';
 import { discoveryRouter } from './routes/discovery.routes.js';
 import { notificationsRouter } from './routes/notifications.routes.js';
 import { paymentSessionsRouter } from './routes/paymentSessions.routes.js';
+import { pushRouter } from './routes/push.routes.js';
 import { sellerRouter } from './routes/seller.routes.js';
 import { settingsRouter } from './routes/settings.routes.js';
 import { supportRouter } from './routes/support.routes.js';
@@ -53,6 +54,7 @@ export function createApp() {
   app.use('/api/discovery', discoveryRouter);
   app.use('/api/notifications', notificationsRouter);
   app.use('/api/seller', sellerRouter);
+  app.use('/api/push', pushRouter);
   app.use('/api/settings', settingsRouter);
   app.use('/api/support', supportRouter);
   app.use('/api/payment-sessions', paymentSessionsRouter);

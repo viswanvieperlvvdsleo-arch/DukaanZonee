@@ -32,4 +32,8 @@ export const config = {
   pgIdleTimeoutMs: Number(process.env.PG_IDLE_TIMEOUT_MS ?? 30000),
   pgSslMode: process.env.PGSSLMODE ?? process.env.PG_SSLMODE ?? '',
   pgSslRejectUnauthorized: process.env.PGSSL_REJECT_UNAUTHORIZED !== 'false',
+  fcmServiceAccountJson: process.env.FCM_SERVICE_ACCOUNT_JSON ?? null,
+  fcmProjectId: process.env.FCM_PROJECT_ID ?? null,
+  fcmClientEmail: process.env.FCM_CLIENT_EMAIL ?? null,
+  fcmPrivateKey: process.env.FCM_PRIVATE_KEY ?? null,
 };

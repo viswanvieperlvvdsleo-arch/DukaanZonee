@@ -156,6 +156,7 @@ function mapShopRow(row) {
     phone: row.seller_phone,
     avatarUrl: row.avatar_url?.startsWith('blob:') ? null : row.avatar_url,
     mapUrl: row.map_url,
+    items: row.items ?? [],
     isOpen: row.is_open,
     followerCount: row.follower_count ?? 0,
     isFollowing: row.is_following ?? false,
@@ -437,6 +438,17 @@ discoveryRouter.get('/shops', optionalAuth, async (req, res, next) => {
         OR LOWER(COALESCE(s.id, '')) LIKE $3
         OR LOWER(COALESCE(seller.email, '')) LIKE $3
         OR LOWER(COALESCE(seller.phone, '')) LIKE $3
+        OR EXISTS (
+          SELECT 1
+          FROM shelf_items search_item
+          WHERE search_item.shop_id = s.id
+            AND search_item.is_active = TRUE
+            AND (
+              LOWER(search_item.name) LIKE $3
+              OR LOWER(COALESCE(search_item.category, '')) LIKE $3
+              OR LOWER(COALESCE(search_item.barcode, '')) LIKE $3
+            )
+        )
       )`;
     }
 
@@ -468,7 +480,24 @@ discoveryRouter.get('/shops', optionalAuth, async (req, res, next) => {
        (SELECT ROUND(AVG(pr.rating)::NUMERIC, 1)::FLOAT
           FROM product_reviews pr
           INNER JOIN shelf_items review_item ON review_item.id = pr.shelf_item_id
-          WHERE review_item.shop_id = s.id) AS rating
+          WHERE review_item.shop_id = s.id) AS rating,
+       (SELECT COALESCE(
+          json_agg(
+            json_build_object(
+              'id', item.id,
+              'name', item.name,
+              'category', item.category,
+              'barcode', item.barcode,
+              'stockQty', item.stock_qty,
+              'priceCents', item.price_cents
+            )
+            ORDER BY item.updated_at DESC
+          ),
+          '[]'::json
+        )
+        FROM shelf_items item
+        WHERE item.shop_id = s.id
+          AND item.is_active = TRUE) AS items
        FROM shops s
        INNER JOIN app_users seller ON seller.id = s.seller_id
        WHERE s.is_open = TRUE

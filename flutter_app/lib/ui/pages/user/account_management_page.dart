@@ -478,7 +478,7 @@ class _AccountManagementPageState extends State<AccountManagementPage> {
                           imageUrl:
                               _profileImageData ??
                               user?.profilePic ??
-                              'https://api.dicebear.com/7.x/avataaars/png?seed=${user?.name ?? 'Aryan'}',
+                              'https://api.dicebear.com/7.x/avataaars/png?seed=${user?.name ?? 'User'}',
                           fallbackIcon: Icons.person,
                           fallbackIconSize: 50,
                           fallbackColor: Colors.grey,

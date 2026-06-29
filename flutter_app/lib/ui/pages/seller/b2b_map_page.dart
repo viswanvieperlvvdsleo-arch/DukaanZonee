@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
 import 'package:dukaan_zone_flutter/dukaan.dart';
@@ -14,50 +15,111 @@ class _SellerMapPageState extends State<SellerMapPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   final Completer<GoogleMapController> _mapController = Completer<GoogleMapController>();
-
-  // Mock list of local neighborhood shops for B2B collaboration
-  final List<Map<String, dynamic>> _neighborhoodShops = [
-    {
-      'name': 'Gupta Organic Mart',
-      'owner': 'Sunil Gupta',
-      'distance': '350m away',
-      'specialty': 'Organic Veggies & Cereals',
-      'lat': 28.6149,
-      'lng': 77.2099,
-      'rating': '4.9',
-      'stockLevel': 'High Surplus',
-      'featuredProduct': 'Fuji Apples',
-    },
-    {
-      'name': 'Verma Grocery Depot',
-      'owner': 'Rakesh Verma',
-      'distance': '600m away',
-      'specialty': 'Dairy & Packaged Goods',
-      'lat': 28.6155,
-      'lng': 77.2115,
-      'rating': '4.7',
-      'stockLevel': 'Balanced',
-      'featuredProduct': 'Organic Milk',
-    },
-    {
-      'name': 'Sharma Supermarket',
-      'owner': 'Amit Sharma',
-      'distance': '850m away',
-      'specialty': 'Daily Staples & Fruits',
-      'lat': 28.6135,
-      'lng': 77.2085,
-      'rating': '4.6',
-      'stockLevel': 'Surplus Eggs & Wheat',
-      'featuredProduct': 'Grade-A Bananas',
-    },
-  ];
-
+  final List<Map<String, dynamic>> _neighborhoodShops = [];
+  bool _loading = true;
+  String? _error;
+  StreamSubscription<LiveEvent>? _liveSub;
   Map<String, dynamic>? _selectedShop;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPartners();
+    _liveSub = liveSocketService.events.listen((event) {
+      if (_shouldRefreshMap(event.type)) {
+        _loadPartners(silent: true);
+      }
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _liveSub?.cancel();
     super.dispose();
+  }
+
+  Future<void> _loadPartners({String query = '', bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+    try {
+      final encoded = Uri.encodeQueryComponent(query.trim());
+      final suffix = encoded.isEmpty ? '' : '?q=$encoded';
+      final data = await apiClient.getJson('/api/seller/b2b/partners$suffix');
+      final partners = (data['partners'] as List? ?? const [])
+          .whereType<Map>()
+          .map((raw) => _partnerFromBackend(Map<String, dynamic>.from(raw)))
+          .toList();
+      if (!mounted) return;
+      setState(() {
+        _neighborhoodShops
+          ..clear()
+          ..addAll(partners);
+        _loading = false;
+        _error = null;
+        if (_selectedShop != null &&
+            !_neighborhoodShops.any((s) => s['shopId'] == _selectedShop!['shopId'])) {
+          _selectedShop = null;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = 'Could not load live B2B shops.';
+      });
+    }
+  }
+
+  bool _shouldRefreshMap(String type) {
+    final normalized = type.toLowerCase();
+    return normalized.contains('shop') ||
+        normalized.contains('shelf') ||
+        normalized.contains('stock') ||
+        normalized.contains('inventory') ||
+        normalized.contains('payment') ||
+        normalized.contains('promotion');
+  }
+
+  Map<String, dynamic> _partnerFromBackend(Map<String, dynamic> partner) {
+    final name = partner['name']?.toString() ?? 'Shop';
+    final category = partner['category']?.toString() ?? 'Local shop';
+    final block = partner['block']?.toString() ?? '';
+    final lat = _readDouble(partner['latitude']);
+    final lng = _readDouble(partner['longitude']);
+    final seed = name.hashCode.abs();
+    final fallbackLat = 17.7292 + ((seed % 9) - 4) * 0.0016;
+    final fallbackLng = 83.3150 + (((seed ~/ 9) % 9) - 4) * 0.0016;
+    return {
+      'shopId': partner['shopId']?.toString(),
+      'sellerId': partner['sellerId']?.toString(),
+      'name': name,
+      'owner': partner['owner']?.toString() ?? name,
+      'distance': lat == null || lng == null ? 'Location pending' : 'Live location',
+      'specialty': block.isEmpty ? category : '$category - $block',
+      'lat': lat ?? fallbackLat,
+      'lng': lng ?? fallbackLng,
+      'rating': '5.0',
+      'stockLevel': partner['upiId']?.toString().isNotEmpty == true
+          ? 'Payment ready'
+          : 'Profile ready',
+      'featuredProduct': category,
+      'avatarUrl': partner['avatarUrl']?.toString(),
+      'mapUrl': partner['mapUrl']?.toString(),
+      'email': partner['email']?.toString() ?? '',
+      'phone': partner['phone']?.toString() ?? '',
+      'upiId': partner['upiId']?.toString() ?? '',
+    };
+  }
+
+  double? _readDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 
   void _onShopTap(Map<String, dynamic> shop) async {
@@ -65,6 +127,7 @@ class _SellerMapPageState extends State<SellerMapPage> {
       _selectedShop = shop;
     });
 
+    if (kIsWeb || !_mapController.isCompleted) return;
     final controller = await _mapController.future;
     controller.animateCamera(
       CameraUpdate.newCameraPosition(
@@ -81,10 +144,18 @@ class _SellerMapPageState extends State<SellerMapPage> {
     // Filter shops based on search query (by shop name, specialty, or featured product)
     final filteredShops = _neighborhoodShops.where((shop) {
       final name = shop['name'].toString().toLowerCase();
+      final owner = shop['owner'].toString().toLowerCase();
       final specialty = shop['specialty'].toString().toLowerCase();
       final product = shop['featuredProduct'].toString().toLowerCase();
+      final upiId = shop['upiId'].toString().toLowerCase();
+      final phone = shop['phone'].toString().toLowerCase();
       final query = _searchQuery.toLowerCase();
-      return name.contains(query) || specialty.contains(query) || product.contains(query);
+      return name.contains(query) ||
+          owner.contains(query) ||
+          specialty.contains(query) ||
+          product.contains(query) ||
+          upiId.contains(query) ||
+          phone.contains(query);
     }).toList();
 
     return Scaffold(
@@ -93,37 +164,63 @@ class _SellerMapPageState extends State<SellerMapPage> {
         children: [
           // 1. Google Map Background
           Positioned.fill(
-            child: GoogleMap(
-              initialCameraPosition: const CameraPosition(
-                target: LatLng(28.6145, 77.2102),
-                zoom: 15.0,
-              ),
-              mapType: MapType.normal,
-              myLocationEnabled: false,
-              zoomControlsEnabled: false,
-              compassEnabled: false,
-              mapToolbarEnabled: false,
-              onMapCreated: (GoogleMapController controller) {
-                _mapController.complete(controller);
-              },
-              markers: _neighborhoodShops.map((shop) {
-                final isSelected = _selectedShop != null && _selectedShop!['name'] == shop['name'];
-                return Marker(
-                  markerId: MarkerId(shop['name']),
-                  position: LatLng(shop['lat'], shop['lng']),
-                  infoWindow: InfoWindow(title: shop['name'], snippet: shop['specialty']),
-                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                    isSelected ? BitmapDescriptor.hueViolet : BitmapDescriptor.hueRed,
+            child: kIsWeb
+                ? _buildWebPartnerMap(filteredShops)
+                : GoogleMap(
+                    initialCameraPosition: const CameraPosition(
+                      target: LatLng(28.6145, 77.2102),
+                      zoom: 15.0,
+                    ),
+                    mapType: MapType.normal,
+                    myLocationEnabled: false,
+                    zoomControlsEnabled: false,
+                    compassEnabled: false,
+                    mapToolbarEnabled: false,
+                    onMapCreated: (GoogleMapController controller) {
+                      if (!_mapController.isCompleted) {
+                        _mapController.complete(controller);
+                      }
+                    },
+                    markers: _neighborhoodShops.map((shop) {
+                      final isSelected = _selectedShop != null &&
+                          _selectedShop!['name'] == shop['name'];
+                      return Marker(
+                        markerId: MarkerId(
+                          shop['shopId']?.toString() ?? shop['name'],
+                        ),
+                        position: LatLng(shop['lat'], shop['lng']),
+                        infoWindow: InfoWindow(
+                          title: shop['name'],
+                          snippet: shop['specialty'],
+                        ),
+                        icon: BitmapDescriptor.defaultMarkerWithHue(
+                          isSelected
+                              ? BitmapDescriptor.hueViolet
+                              : BitmapDescriptor.hueRed,
+                        ),
+                        onTap: () {
+                          setState(() {
+                            _selectedShop = shop;
+                          });
+                        },
+                      );
+                    }).toSet(),
                   ),
-                  onTap: () {
-                    setState(() {
-                      _selectedShop = shop;
-                    });
-                  },
-                );
-              }).toSet(),
-            ),
           ),
+          if (_loading)
+            Positioned.fill(
+              child: Container(
+                color: Colors.white.withOpacity(0.68),
+                child: const Center(child: CircularProgressIndicator()),
+              ),
+            ),
+          if (_error != null)
+            Positioned(
+              top: 112,
+              left: 20,
+              right: 20,
+              child: _buildStatusCard(_error!),
+            ),
 
           // 2. Premium Top Floating Search Overlay
           Positioned(
@@ -192,10 +289,10 @@ class _SellerMapPageState extends State<SellerMapPage> {
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
                         children: [
-                          _buildQuickPill('Apples', Icons.apple),
-                          _buildQuickPill('Gupta Mart', Icons.store),
-                          _buildQuickPill('Milk', Icons.local_cafe),
-                          _buildQuickPill('Sharma Shop', Icons.storefront),
+                          _buildQuickPill('Pharmacy', Icons.local_pharmacy),
+                          _buildQuickPill('Grocery', Icons.storefront),
+                          _buildQuickPill('Payment ready', Icons.payments_outlined),
+                          _buildQuickPill('Block A', Icons.location_city),
                         ],
                       ),
                     ),
@@ -227,6 +324,111 @@ class _SellerMapPageState extends State<SellerMapPage> {
     );
   }
 
+  Widget _buildWebPartnerMap(List<Map<String, dynamic>> shops) {
+    final visible = shops.take(8).toList();
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFF0FDF4), Color(0xFFF8FAFC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(child: CustomPaint(painter: _SellerMapGridPainter())),
+          ...List.generate(visible.length, (index) {
+            final shop = visible[index];
+            final left = 28.0 + (index % 2) * 178.0;
+            final top = 126.0 + (index ~/ 2) * 112.0;
+            final selected = _selectedShop?['shopId'] == shop['shopId'];
+            return Positioned(
+              left: left,
+              top: top,
+              child: GestureDetector(
+                onTap: () => _onShopTap(shop),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  width: 164,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: selected ? primary : Colors.white,
+                      width: 2,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x1A000000),
+                        blurRadius: 18,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.storefront,
+                            color: Colors.redAccent,
+                            size: 21,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              shop['name']?.toString() ?? 'Shop',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: ink,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        shop['specialty']?.toString() ?? 'Local partner',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: muted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        shop['distance']?.toString() ?? 'Live location',
+                        style: const TextStyle(
+                          color: success,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+          if (visible.isEmpty && !_loading)
+            const Center(
+              child: Text(
+                'No B2B partners found here.',
+                style: TextStyle(color: muted, fontWeight: FontWeight.w900),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuickPill(String label, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(right: 8),
@@ -238,6 +440,9 @@ class _SellerMapPageState extends State<SellerMapPage> {
           });
           final matches = _neighborhoodShops.where((shop) {
             return shop['name'].toString().toLowerCase().contains(label.toLowerCase()) ||
+                shop['owner'].toString().toLowerCase().contains(label.toLowerCase()) ||
+                shop['specialty'].toString().toLowerCase().contains(label.toLowerCase()) ||
+                shop['upiId'].toString().toLowerCase().contains(label.toLowerCase()) ||
                 shop['featuredProduct'].toString().toLowerCase().contains(label.toLowerCase());
           }).toList();
           if (matches.isNotEmpty) {
@@ -420,7 +625,13 @@ class _SellerMapPageState extends State<SellerMapPage> {
                 child: OutlinedButton.icon(
                   onPressed: () {
                     // Navigate directly to public Merchant Profile
-                    push(context, MerchantProfilePage(shopName: shop['name']));
+                    push(
+                      context,
+                      MerchantProfilePage(
+                        shopId: shop['shopId']?.toString(),
+                        shopName: shop['name'],
+                      ),
+                    );
                   },
                   icon: const Icon(Icons.inventory_2_outlined, size: 18),
                   label: const Text('Browse Shelf'),
@@ -444,6 +655,9 @@ class _SellerMapPageState extends State<SellerMapPage> {
                           'name': shop['name'],
                           'owner': shop['owner'],
                           'specialty': shop['specialty'],
+                          'shopId': shop['shopId'],
+                          'sellerId': shop['sellerId'],
+                          'avatarUrl': shop['avatarUrl'],
                           'avatarColor': Colors.deepPurple,
                         },
                       ),
@@ -461,6 +675,27 @@ class _SellerMapPageState extends State<SellerMapPage> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton.icon(
+              onPressed: () => openShopLocation(
+                context,
+                shopName: shop['name']?.toString() ?? 'Shop',
+                mapUrl: shop['mapUrl']?.toString(),
+                destination: LatLng(shop['lat'], shop['lng']),
+              ),
+              icon: const Icon(Icons.location_on_outlined, size: 18),
+              label: const Text('Open Location'),
+              style: TextButton.styleFrom(
+                foregroundColor: primary,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -495,7 +730,7 @@ class _SellerMapPageState extends State<SellerMapPage> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'Try searching for Apples, Milk, or Gupta.',
+                  'Try searching by shop name, owner, category, phone, or UPI.',
                   style: TextStyle(color: muted, fontSize: 11, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -505,4 +740,64 @@ class _SellerMapPageState extends State<SellerMapPage> {
       ),
     );
   }
+
+  Widget _buildStatusCard(String message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: shadowSm,
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: primary, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: ink,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SellerMapGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final roadPaint = Paint()
+      ..color = Colors.white.withOpacity(0.74)
+      ..strokeWidth = 9
+      ..strokeCap = StrokeCap.round;
+    final lanePaint = Paint()
+      ..color = const Color(0xFFCDEDDC).withOpacity(0.72)
+      ..strokeWidth = 2;
+
+    for (double y = 90; y < size.height; y += 88) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y + 28), lanePaint);
+    }
+    for (double x = -50; x < size.width + 50; x += 92) {
+      canvas.drawLine(Offset(x, 0), Offset(x + 82, size.height), lanePaint);
+    }
+    canvas.drawLine(
+      Offset(size.width * 0.12, size.height * 0.22),
+      Offset(size.width * 0.9, size.height * 0.78),
+      roadPaint,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.08, size.height * 0.7),
+      Offset(size.width * 0.82, size.height * 0.24),
+      roadPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

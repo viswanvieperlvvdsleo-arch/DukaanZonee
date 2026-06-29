@@ -16,6 +16,10 @@ class _UserMapPageState extends State<UserMapPage> {
   final Completer<GoogleMapController> _controller = Completer();
   Shop? _selectedShop;
   Set<Marker> _markers = {};
+  List<Shop> _shops = [];
+  bool _loading = true;
+  String? _error;
+  StreamSubscription<LiveEvent>? _liveSub;
 
   static const CameraPosition _initialPosition = CameraPosition(
     target: LatLng(17.7292, 83.3150),
@@ -25,13 +29,19 @@ class _UserMapPageState extends State<UserMapPage> {
   @override
   void initState() {
     super.initState();
-    _updateMarkers('');
+    _loadShops();
+    _liveSub = liveSocketService.events.listen((event) {
+      if (_shouldRefreshMap(event.type)) {
+        _loadShops(silent: true);
+      }
+    });
     globalSearchQuery.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
     globalSearchQuery.removeListener(_onSearchChanged);
+    _liveSub?.cancel();
     super.dispose();
   }
 
@@ -39,14 +49,51 @@ class _UserMapPageState extends State<UserMapPage> {
     _updateMarkers(globalSearchQuery.value);
   }
 
+  bool _shouldRefreshMap(String type) {
+    final normalized = type.toLowerCase();
+    return normalized.contains('shop') ||
+        normalized.contains('shelf') ||
+        normalized.contains('stock') ||
+        normalized.contains('inventory') ||
+        normalized.contains('payment') ||
+        normalized.contains('promotion');
+  }
+
+  Future<void> _loadShops({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
+    try {
+      final loaded = await shopProfileService.listShops(
+        query: globalSearchQuery.value,
+      );
+      if (!mounted) return;
+      setState(() {
+        _shops = loaded;
+        _loading = false;
+        _error = null;
+      });
+      _updateMarkers(globalSearchQuery.value);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _shops = shops;
+        _loading = false;
+        _error = 'Could not load live shop map.';
+      });
+      _updateMarkers(globalSearchQuery.value);
+    }
+  }
+
   void _updateMarkers(String query) {
-    final filtered = query.isEmpty 
-        ? shops 
-        : shops.where((s) => s.name.toLowerCase().contains(query.toLowerCase()) || s.type.toLowerCase().contains(query.toLowerCase())).toList();
+    final filtered = _filteredShops(query);
 
     setState(() {
       _markers = filtered.map((shop) => Marker(
-        markerId: MarkerId(shop.name),
+        markerId: MarkerId(shop.id ?? shop.name),
         position: shop.location,
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
         onTap: () => _selectShop(shop),
@@ -59,12 +106,48 @@ class _UserMapPageState extends State<UserMapPage> {
   }
 
   Future<void> _animateTo(LatLng pos) async {
+    if (kIsWeb || !_controller.isCompleted) return;
     final controller = await _controller.future;
     controller.animateCamera(CameraUpdate.newLatLngZoom(pos, 16));
   }
 
   void _selectShop(Shop shop) {
     setState(() => _selectedShop = shop);
+  }
+
+  List<Shop> _filteredShops(String query) {
+    final source = _shops.isEmpty ? shops : _shops;
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) return source;
+    return source.where((shop) {
+      return shop.name.toLowerCase().contains(normalized) ||
+          shop.type.toLowerCase().contains(normalized) ||
+          shop.block.toLowerCase().contains(normalized) ||
+          (shop.address ?? '').toLowerCase().contains(normalized) ||
+          shop.items.any(
+            (item) =>
+                item.name.toLowerCase().contains(normalized) ||
+                (item.category ?? '').toLowerCase().contains(normalized) ||
+                (item.barcode ?? '').toLowerCase().contains(normalized),
+          );
+    }).toList();
+  }
+
+  String? _matchedItemLabel(Shop shop) {
+    final normalized = globalSearchQuery.value.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    ShopShelfItem? match;
+    for (final item in shop.items) {
+      final isMatch = item.name.toLowerCase().contains(normalized) ||
+          (item.category ?? '').toLowerCase().contains(normalized) ||
+          (item.barcode ?? '').toLowerCase().contains(normalized);
+      if (isMatch) {
+        match = item;
+        break;
+      }
+    }
+    if (match == null) return null;
+    return '${match.name} available${match.stockQty > 0 ? ' (${match.stockQty} left)' : ''}';
   }
 
   @override
@@ -76,29 +159,63 @@ class _UserMapPageState extends State<UserMapPage> {
 
         return Stack(
           children: [
-            GoogleMap(
-              mapType: MapType.normal,
-              initialCameraPosition: _initialPosition,
-              zoomControlsEnabled: false,
-              myLocationButtonEnabled: false,
-              zoomGesturesEnabled: true,
-              scrollGesturesEnabled: true,
-              tiltGesturesEnabled: true,
-              rotateGesturesEnabled: true,
-              gestureRecognizers: {
-                Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
-                Factory<PanGestureRecognizer>(() => PanGestureRecognizer()),
-                Factory<ScaleGestureRecognizer>(() => ScaleGestureRecognizer()),
-                Factory<TapGestureRecognizer>(() => TapGestureRecognizer()),
-                Factory<VerticalDragGestureRecognizer>(() => VerticalDragGestureRecognizer()),
-                Factory<HorizontalDragGestureRecognizer>(() => HorizontalDragGestureRecognizer()),
-              },
-              markers: _markers,
-              polylines: isRouting ? _generatePolylines(mapState.destination) : const <Polyline>{},
-              onMapCreated: (GoogleMapController controller) {
-                if (!_controller.isCompleted) _controller.complete(controller);
-              },
+            Positioned.fill(
+              child: kIsWeb
+                  ? _buildWebMapFallback(mapState, isRouting)
+                  : GoogleMap(
+                      mapType: MapType.normal,
+                      initialCameraPosition: _initialPosition,
+                      zoomControlsEnabled: false,
+                      myLocationButtonEnabled: false,
+                      zoomGesturesEnabled: true,
+                      scrollGesturesEnabled: true,
+                      tiltGesturesEnabled: true,
+                      rotateGesturesEnabled: true,
+                      gestureRecognizers: {
+                        Factory<OneSequenceGestureRecognizer>(
+                          () => EagerGestureRecognizer(),
+                        ),
+                        Factory<PanGestureRecognizer>(
+                          () => PanGestureRecognizer(),
+                        ),
+                        Factory<ScaleGestureRecognizer>(
+                          () => ScaleGestureRecognizer(),
+                        ),
+                        Factory<TapGestureRecognizer>(
+                          () => TapGestureRecognizer(),
+                        ),
+                        Factory<VerticalDragGestureRecognizer>(
+                          () => VerticalDragGestureRecognizer(),
+                        ),
+                        Factory<HorizontalDragGestureRecognizer>(
+                          () => HorizontalDragGestureRecognizer(),
+                        ),
+                      },
+                      markers: _markers,
+                      polylines: isRouting
+                          ? _generatePolylines(mapState.destination)
+                          : const <Polyline>{},
+                      onMapCreated: (GoogleMapController controller) {
+                        if (!_controller.isCompleted) {
+                          _controller.complete(controller);
+                        }
+                      },
+                    ),
             ),
+            if (_loading)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.white.withOpacity(0.72),
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+              ),
+            if (_error != null)
+              Positioned(
+                top: 76,
+                left: 16,
+                right: 16,
+                child: _buildMapNotice(_error!),
+              ),
 
             // Top Search Pill (if not routing)
             if (!isRouting)
@@ -155,6 +272,148 @@ class _UserMapPageState extends State<UserMapPage> {
     );
   }
 
+  Widget _buildWebMapFallback(MapState state, bool isRouting) {
+    final visibleShops = _filteredShops(globalSearchQuery.value);
+    final pins = visibleShops.take(8).toList();
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFEFF6FF), Color(0xFFF8FAFC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(painter: _MapGridPainter()),
+          ),
+          if (isRouting)
+            Positioned(
+              left: 52,
+              right: 52,
+              top: 180,
+              child: Container(
+                height: 5,
+                decoration: BoxDecoration(
+                  color: primary.withOpacity(0.45),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+          ...List.generate(pins.length, (index) {
+            final shop = pins[index];
+            final left = 34.0 + (index % 2) * 170.0;
+            final top = 112.0 + (index ~/ 2) * 112.0;
+            final itemLabel = _matchedItemLabel(shop);
+            return Positioned(
+              left: left,
+              top: top,
+              child: GestureDetector(
+                onTap: () => _selectShop(shop),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  width: 150,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _selectedShop?.id == shop.id
+                          ? primary
+                          : Colors.white,
+                      width: 2,
+                    ),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x1A000000),
+                        blurRadius: 18,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            color: Colors.redAccent,
+                            size: 22,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              shop.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: ink,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        itemLabel ?? '${shop.type} - ${shop.block}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: itemLabel == null ? muted : success,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+          if (pins.isEmpty && !_loading)
+            const Center(
+              child: Text(
+                'No live shops found for this search.',
+                style: TextStyle(color: muted, fontWeight: FontWeight.w900),
+              ),
+            ),
+          Positioned(
+            left: 18,
+            bottom: 18,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x1A000000),
+                    blurRadius: 18,
+                    offset: Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Text(
+                kIsWeb
+                    ? 'Live item map fallback'
+                    : 'Live item map',
+                style: const TextStyle(
+                  color: primary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Set<Polyline> _generatePolylines(LatLng? dest) {
     if (dest == null) return {};
     return {
@@ -199,9 +458,12 @@ class _UserMapPageState extends State<UserMapPage> {
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () {
-                    globalMapState.value = MapState(mode: MapMode.routing, destination: shop.location, destinationName: shop.name);
-                  },
+                  onPressed: () => openShopLocation(
+                    context,
+                    shopName: shop.name,
+                    mapUrl: shop.mapUrl,
+                    destination: shop.location,
+                  ),
                   icon: const Icon(Icons.directions),
                   label: const Text('Directions'),
                   style: FilledButton.styleFrom(backgroundColor: const Color(0xFF007A87), padding: const EdgeInsets.symmetric(vertical: 16)),
@@ -210,7 +472,10 @@ class _UserMapPageState extends State<UserMapPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => push(context, MerchantProfilePage(shopName: shop.name)),
+                  onPressed: () => push(
+                    context,
+                    MerchantProfilePage(shopId: shop.id, shopName: shop.name),
+                  ),
                   icon: const Icon(Icons.storefront),
                   label: const Text('View Shop'),
                   style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
@@ -300,4 +565,64 @@ class _UserMapPageState extends State<UserMapPage> {
       child: Icon(icon, color: Colors.black87, size: 24),
     );
   }
+
+  Widget _buildMapNotice(String message) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: shadowSm,
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: primary, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: ink,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final roadPaint = Paint()
+      ..color = Colors.white.withOpacity(0.78)
+      ..strokeWidth = 10
+      ..strokeCap = StrokeCap.round;
+    final minorPaint = Paint()
+      ..color = const Color(0xFFD7E3F5).withOpacity(0.58)
+      ..strokeWidth = 2;
+
+    for (double x = -40; x < size.width + 80; x += 86) {
+      canvas.drawLine(Offset(x, 0), Offset(x + 110, size.height), minorPaint);
+    }
+    for (double y = 70; y < size.height; y += 95) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y + 22), minorPaint);
+    }
+    canvas.drawLine(
+      Offset(size.width * 0.08, size.height * 0.72),
+      Offset(size.width * 0.92, size.height * 0.18),
+      roadPaint,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.16, size.height * 0.18),
+      Offset(size.width * 0.82, size.height * 0.84),
+      roadPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

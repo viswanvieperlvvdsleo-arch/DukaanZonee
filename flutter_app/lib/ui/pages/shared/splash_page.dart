@@ -130,38 +130,24 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Brand(size: 100),
+                        const BrandLockup(markSize: 70),
                         const SizedBox(height: 18),
-                        // Only show text while in center phase
+                        // Only show tagline while in center phase.
                         if (_exitCtrl.value < 0.15)
                           Opacity(
                             opacity: (1.0 - _exitCtrl.value / 0.15).clamp(
                               0.0,
                               1.0,
                             ),
-                            child: Column(
-                              children: [
-                                Text(
-                                  'DukaanZone',
-                                  style: TextStyle(
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.w900,
-                                    color: isDark ? Colors.white : ink,
-                                    letterSpacing: -0.8,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Connecting the world through\nlocal shopkeepers.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: muted,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ],
+                            child: Text(
+                              'Connecting the world through\nlocal shopkeepers.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: muted,
+                                height: 1.5,
+                              ),
                             ),
                           ),
                       ],

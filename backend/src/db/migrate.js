@@ -184,6 +184,40 @@ const statements = [
   )`,
   `CREATE INDEX IF NOT EXISTS notifications_recipient_created_idx
     ON notifications(recipient_user_id, created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS push_tokens (
+    id TEXT PRIMARY KEY,
+    account_type TEXT NOT NULL CHECK (account_type IN ('user', 'seller', 'admin')),
+    account_id TEXT NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    platform TEXT,
+    device_id TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  `CREATE INDEX IF NOT EXISTS push_tokens_account_idx
+    ON push_tokens(account_type, account_id)`,
+  `CREATE INDEX IF NOT EXISTS push_tokens_last_seen_idx
+    ON push_tokens(last_seen_at DESC)`,
+  `CREATE OR REPLACE FUNCTION notify_dukaanzone_notification_insert()
+    RETURNS trigger AS $$
+    BEGIN
+      PERFORM pg_notify(
+        'dukaanzone_notifications',
+        json_build_object(
+          'id', NEW.id,
+          'recipientUserId', NEW.recipient_user_id,
+          'type', NEW.type,
+          'title', NEW.title,
+          'body', NEW.body
+        )::text
+      );
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql`,
+  `DROP TRIGGER IF EXISTS notifications_push_insert ON notifications`,
+  `CREATE TRIGGER notifications_push_insert
+    AFTER INSERT ON notifications
+    FOR EACH ROW EXECUTE FUNCTION notify_dukaanzone_notification_insert()`,
   `CREATE TABLE IF NOT EXISTS admin_signals (
     id TEXT PRIMARY KEY,
     admin_user_id TEXT REFERENCES app_users(id) ON DELETE SET NULL,

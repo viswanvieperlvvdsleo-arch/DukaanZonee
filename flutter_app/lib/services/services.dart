@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 import 'package:dukaan_zone_flutter/services/api_service.dart';
+import 'package:dukaan_zone_flutter/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 export 'sound_service.dart';
@@ -231,6 +232,9 @@ abstract class AuthService {
     String? category,
     String? block,
     String? address,
+    double? latitude,
+    double? longitude,
+    String? mapUrl,
     String? paymentQrPayload,
     String? upiId,
   });
@@ -315,6 +319,9 @@ class MockAuthService implements AuthService {
     String? category,
     String? block,
     String? address,
+    double? latitude,
+    double? longitude,
+    String? mapUrl,
     String? paymentQrPayload,
     String? upiId,
   }) async {
@@ -391,6 +398,7 @@ class BackendAuthService implements AuthService {
       final data = await apiClient.getJson('/api/auth/me');
       final user = data['user'] as Map<String, dynamic>;
       _applyUser(user);
+      await _bindPushForCurrentUser();
       liveSocketService.connect();
       return true;
     } catch (error) {
@@ -441,6 +449,7 @@ class BackendAuthService implements AuthService {
       await prefs.setString(_sessionTokenKey, token);
       _applyUser(user);
       await _saveAccount(user, token);
+      await _bindPushForCurrentUser();
       liveSocketService.connect();
       return true;
     } catch (error) {
@@ -492,6 +501,9 @@ class BackendAuthService implements AuthService {
     String? category,
     String? block,
     String? address,
+    double? latitude,
+    double? longitude,
+    String? mapUrl,
     String? paymentQrPayload,
     String? upiId,
   }) async {
@@ -509,6 +521,10 @@ class BackendAuthService implements AuthService {
                 'block': block ?? 'Block A',
                 if (address != null && address.trim().isNotEmpty)
                   'address': address.trim(),
+                if (latitude != null) 'latitude': latitude,
+                if (longitude != null) 'longitude': longitude,
+                if (mapUrl != null && mapUrl.trim().isNotEmpty)
+                  'mapUrl': mapUrl.trim(),
                 if (paymentQrPayload != null &&
                     paymentQrPayload.trim().isNotEmpty)
                   'paymentQrPayload': paymentQrPayload.trim(),
@@ -568,6 +584,7 @@ class BackendAuthService implements AuthService {
 
   @override
   Future<void> logout() async {
+    await hardwareNotificationService.unregister();
     apiClient.setToken(null);
     liveSocketService.disconnect();
     await _clearSavedSession();
@@ -587,6 +604,7 @@ class BackendAuthService implements AuthService {
     }
     liveSocketService.connect();
     _applyUser(user);
+    await _bindPushForCurrentUser();
   }
 
   void _applyUser(Map<String, dynamic> user) {
@@ -601,6 +619,15 @@ class BackendAuthService implements AuthService {
     );
     _currentRole.value = role;
     _isLoggedIn.value = true;
+  }
+
+  Future<void> _bindPushForCurrentUser() async {
+    final user = _currentUser.value;
+    if (user == null || user.id.isEmpty) return;
+    await hardwareNotificationService.bindAccount(
+      accountType: user.role.name,
+      accountId: user.id,
+    );
   }
 
   Future<void> _clearSavedSession() async {
@@ -1166,13 +1193,30 @@ class ShopProfileService {
   }
 
   Shop _mapShop(Map<String, dynamic> shop) {
+    final latitude = (shop['latitude'] as num?)?.toDouble();
+    final longitude = (shop['longitude'] as num?)?.toDouble();
+    final items = (shop['items'] as List? ?? const [])
+        .whereType<Map>()
+        .map((raw) {
+          final item = Map<String, dynamic>.from(raw);
+          return ShopShelfItem(
+            id: item['id']?.toString() ?? '',
+            name: item['name']?.toString() ?? 'Item',
+            category: item['category']?.toString(),
+            barcode: item['barcode']?.toString(),
+            stockQty: (item['stockQty'] as num?)?.toInt() ?? 0,
+            priceCents: (item['priceCents'] as num?)?.toInt() ?? 0,
+          );
+        })
+        .where((item) => item.id.isNotEmpty)
+        .toList();
     return Shop(
       shop['name']?.toString() ?? 'Shop',
       shop['block']?.toString() ?? '',
       shop['category']?.toString() ?? 'Local shop',
       ((shop['rating'] as num?)?.toDouble() ?? 0).toStringAsFixed(1),
       '${shop['followerCount'] as int? ?? 0}',
-      const LatLng(0, 0),
+      LatLng(latitude ?? 17.7292, longitude ?? 83.3150),
       id: shop['id']?.toString(),
       address: shop['address']?.toString(),
       paymentQrPayload: shop['paymentQrPayload']?.toString(),
@@ -1184,6 +1228,7 @@ class ShopProfileService {
       ratingValue: (shop['rating'] as num?)?.toDouble() ?? 0,
       isFollowing: shop['isFollowing'] == true,
       sellerId: shop['sellerId']?.toString() ?? shop['seller_id']?.toString(),
+      items: items,
     );
   }
 }
@@ -1379,6 +1424,7 @@ Future<void> openShopLocation(
   BuildContext context, {
   required String shopName,
   String? mapUrl,
+  LatLng? destination,
 }) async {
   final trimmedUrl = mapUrl?.trim() ?? '';
   if (trimmedUrl.isNotEmpty) {
@@ -1392,6 +1438,7 @@ Future<void> openShopLocation(
   globalMapState.value = MapState(
     mode: MapMode.routing,
     destinationName: shopName,
+    destination: destination,
   );
   if (context.mounted) {
     Navigator.of(context).popUntil((route) => route.isFirst);
@@ -1798,19 +1845,46 @@ Future<void> openProductCheckout(BuildContext context, Product product) async {
   try {
     final session = await paymentSessionService.scanPaymentQr(qrPayload);
     if (!context.mounted) return;
-    final matchingProduct = session.products.firstWhere(
-      (item) => item.id == product.id,
-      orElse: () => session.products.firstWhere(
-        (item) => item.name.toLowerCase() == product.name.toLowerCase(),
-        orElse: () => product,
-      ),
-    );
+    int availableStock(Product item) {
+      final raw = item.stock.toLowerCase().trim();
+      if (raw.contains('out')) return 0;
+      final match = RegExp(r'\d+').firstMatch(raw);
+      return match == null ? 999 : int.tryParse(match.group(0) ?? '') ?? 0;
+    }
+
+    final productName = product.name.toLowerCase().trim();
+    Product? matchingProduct;
+    for (final item in session.products) {
+      if (item.id == product.id) {
+        matchingProduct = item;
+        break;
+      }
+    }
+    if (matchingProduct == null) {
+      for (final item in session.products) {
+        if (item.name.toLowerCase().trim() == productName) {
+          matchingProduct = item;
+          break;
+        }
+      }
+    }
+    matchingProduct ??= session.products.isNotEmpty
+        ? session.products.first
+        : null;
+    final prefilledCart = <String, int>{};
+    if (matchingProduct != null && availableStock(matchingProduct) > 0) {
+      prefilledCart[matchingProduct.id] = 1;
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${product.name} is out of stock right now.')),
+      );
+    }
     push(
       context,
       SmartScanCheckoutPage(
         shop: session.shop,
         color: primary,
-        prefilledCart: {matchingProduct.id: 1},
+        prefilledCart: prefilledCart,
         scannedProducts: session.products,
         gatewayProviders: session.providers,
         preferredGatewayProvider: session.preferredProvider,

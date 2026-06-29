@@ -1,18 +1,11 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 
-/// 📡 HARDWARE PUSH NOTIFICATIONS ENGINE
-/// 
-/// To receive notifications when the app is completely closed, the mobile operating
-/// system (Android / iOS) must capture push notifications at the hardware/OS level
-/// and display them directly on the system drawer.
-/// 
-/// This is accomplished using **Firebase Cloud Messaging (FCM)**. When a device is
-/// offline or the app is closed, the Android system (Google Play Services) or iOS
-/// system (APNs - Apple Push Notification service) receives the broadcast, wakes up 
-/// a background isolate of the Flutter app, and pops a native notification.
+import 'package:dukaan_zone_flutter/services/api_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-/// Represents a push payload received from FCM
 class PushNotificationPayload {
   PushNotificationPayload({
     required this.title,
@@ -20,74 +13,231 @@ class PushNotificationPayload {
     this.category,
     required this.data,
   });
+
   final String title;
   final String body;
   final String? category;
   final Map<String, dynamic> data;
 }
 
-/// Global background message handler.
-/// Must be annotated with `@pragma('vm:entry-point')` to prevent tree-shaking
-/// and allow the Flutter engine to boot a background isolate while the app is closed.
 @pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(Map<String, dynamic> message) async {
-  // This function runs in a separate background isolate when a push is received
-  // and the app is in the background or completely closed/terminated.
-  debugPrint('Hardware-level background message received');
-  
-  // Here, we can trigger localized alerts, update offline SQLite stores, etc.
+Future<void> dukaanZoneFirebaseMessagingBackgroundHandler(
+  RemoteMessage message,
+) async {
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {
+    // Firebase may already be initialized by the background isolate.
+  }
 }
 
 class HardwareNotificationService {
   HardwareNotificationService._();
-  static final HardwareNotificationService instance = HardwareNotificationService._();
 
-  final ValueNotifier<List<PushNotificationPayload>> receivedNotifications = ValueNotifier([]);
+  static final HardwareNotificationService instance =
+      HardwareNotificationService._();
+
+  static const _channelId = 'dukaanzone_alerts';
+  static const _channelName = 'DukaanZone alerts';
+
+  final ValueNotifier<List<PushNotificationPayload>> receivedNotifications =
+      ValueNotifier([]);
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
+
+  StreamSubscription<String>? _tokenRefreshSubscription;
   bool _initialized = false;
+  bool _localNotificationsReady = false;
   String? _fcmToken;
+  String? _accountType;
+  String? _accountId;
 
-  /// Initializes FCM and Local Notifications for hardware push delivery
   Future<void> init() async {
-    if (_initialized) return;
+    if (_initialized || kIsWeb) return;
 
-    // Simulate requesting OS-level permission for push notifications
-    debugPrint('🔔 Requesting OS permission for hardware push notifications...');
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(
+        dukaanZoneFirebaseMessagingBackgroundHandler,
+      );
+      await _initLocalNotifications();
+      await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+      await FirebaseMessaging.instance
+          .setForegroundNotificationPresentationOptions(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
 
-    // Simulate fetching the unique FCM registration token
-    _fcmToken = 'fcm_token_dukaan_zone_${DateTime.now().millisecondsSinceEpoch}';
-    debugPrint('Hardware push token generated');
+      _fcmToken = await FirebaseMessaging.instance.getToken();
+      await _registerCurrentToken();
 
-    // Register our background notification callback
-    // In production: FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    
-    _initialized = true;
+      _tokenRefreshSubscription = FirebaseMessaging.instance.onTokenRefresh
+          .listen((token) {
+            _fcmToken = token;
+            unawaited(_registerCurrentToken());
+          });
+
+      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+      FirebaseMessaging.onMessageOpenedApp.listen(_rememberRemoteMessage);
+
+      final initialMessage = await FirebaseMessaging.instance
+          .getInitialMessage();
+      if (initialMessage != null) {
+        _rememberRemoteMessage(initialMessage);
+      }
+
+      _initialized = true;
+    } catch (error) {
+      debugPrint('FCM disabled until Firebase config is added: $error');
+    }
   }
 
-  /// Sends a simulated push notification from the admin/server
-  /// to test how the OS drawer handles incoming notifications.
+  Future<void> bindAccount({
+    required String accountType,
+    required String accountId,
+  }) async {
+    _accountType = accountType;
+    _accountId = accountId;
+    if (!_initialized) {
+      await init();
+    } else {
+      await _registerCurrentToken();
+    }
+  }
+
+  Future<void> unregister() async {
+    final token = _fcmToken;
+    _accountType = null;
+    _accountId = null;
+    if (kIsWeb || token == null || token.isEmpty) return;
+    try {
+      await apiClient.deleteJsonWithResponse('/api/push/register');
+    } catch (error) {
+      debugPrint('Push token unregister failed: $error');
+    }
+  }
+
   Future<void> simulateIncomingHardwarePush({
     required String title,
     required String body,
     String? category,
   }) async {
-    // Simulate network delay of push delivery from the cloud gateway
-    await Future.delayed(const Duration(milliseconds: 1500));
-
     final payload = PushNotificationPayload(
       title: title,
       body: body,
       category: category,
-      data: {'click_action': 'FLUTTER_NOTIFICATION_CLICK'},
+      data: {'category': category ?? ''},
     );
+    _storePayload(payload);
+    await _showLocalNotification(payload);
+  }
 
+  void _handleForegroundMessage(RemoteMessage message) {
+    final payload = _payloadFromRemoteMessage(message);
+    _storePayload(payload);
+    unawaited(_showLocalNotification(payload));
+  }
+
+  void _rememberRemoteMessage(RemoteMessage message) {
+    _storePayload(_payloadFromRemoteMessage(message));
+  }
+
+  PushNotificationPayload _payloadFromRemoteMessage(RemoteMessage message) {
+    final notification = message.notification;
+    return PushNotificationPayload(
+      title:
+          notification?.title ??
+          message.data['title']?.toString() ??
+          'DukaanZone',
+      body: notification?.body ?? message.data['body']?.toString() ?? '',
+      category: message.data['category']?.toString(),
+      data: Map<String, dynamic>.from(message.data),
+    );
+  }
+
+  void _storePayload(PushNotificationPayload payload) {
     receivedNotifications.value = [payload, ...receivedNotifications.value];
+  }
 
-    // Trigger local background handler execution
-    await _firebaseMessagingBackgroundHandler({
-      'notification': {'title': title, 'body': body},
-      'data': {'category': category},
-    });
+  Future<void> _registerCurrentToken() async {
+    final token = _fcmToken;
+    final accountType = _accountType;
+    final accountId = _accountId;
+    if (kIsWeb ||
+        token == null ||
+        token.isEmpty ||
+        accountType == null ||
+        accountId == null ||
+        accountId.isEmpty) {
+      return;
+    }
+
+    try {
+      await apiClient.postJson('/api/push/register', {
+        'token': token,
+        'platform': defaultTargetPlatform.name,
+        'deviceId': 'flutter-${defaultTargetPlatform.name}',
+      });
+    } catch (error) {
+      debugPrint('Push token register failed: $error');
+    }
+  }
+
+  Future<void> _initLocalNotifications() async {
+    if (_localNotificationsReady) return;
+
+    const android = AndroidInitializationSettings('@mipmap/launcher_icon');
+    const initializationSettings = InitializationSettings(android: android);
+    await _localNotifications.initialize(settings: initializationSettings);
+
+    const channel = AndroidNotificationChannel(
+      _channelId,
+      _channelName,
+      description: 'Realtime DukaanZone notifications',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+    );
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(channel);
+
+    _localNotificationsReady = true;
+  }
+
+  Future<void> _showLocalNotification(PushNotificationPayload payload) async {
+    if (kIsWeb) return;
+    await _initLocalNotifications();
+    const androidDetails = AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: 'Realtime DukaanZone notifications',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      icon: '@mipmap/launcher_icon',
+    );
+    const details = NotificationDetails(android: androidDetails);
+    await _localNotifications.show(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: payload.title,
+      body: payload.body,
+      notificationDetails: details,
+      payload: payload.data.toString(),
+    );
+  }
+
+  void dispose() {
+    unawaited(_tokenRefreshSubscription?.cancel());
   }
 }
 

@@ -41,10 +41,14 @@ dependencies:
   image_cropper: ^12.2.1
   mobile_scanner: ^7.2.0
   flutter_tts: ^4.2.5
+  flutter_svg: ^2.2.1
   audioplayers: ^6.6.0
   url_launcher: ^6.3.2
   web_socket_channel: ^3.0.3
   shared_preferences: ^2.5.3
+  firebase_core: ^4.11.0
+  firebase_messaging: ^16.4.1
+  flutter_local_notifications: ^22.0.1
 
 dev_dependencies:
   flutter_test:
@@ -61,10 +65,10 @@ dev_dependencies:
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "logo/ChatGPT Image May 24, 2026, 04_38_37 PM.png"
+  image_path: "web/icons/Icon-512.png"
   web:
     generate: true
-    image_path: "logo/ChatGPT Image May 24, 2026, 04_38_37 PM.png"
+    image_path: "web/icons/Icon-512.png"
 
 
 # For information on the generic Dart part of this file, see the
@@ -81,7 +85,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - .env
-    - logo/
+    - assets/brand/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
