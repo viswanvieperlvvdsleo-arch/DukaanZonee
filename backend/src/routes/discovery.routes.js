@@ -95,8 +95,6 @@ function publicProductQuery({
      WHERE si.is_active = TRUE
        AND s.is_open = TRUE
        AND (s.payment_qr_payload IS NOT NULL OR s.upi_id IS NOT NULL)
-       AND seller.email NOT LIKE '%@dukaanzone.local'
-       AND seller.email NOT LIKE '%@dz.local'
        ${whereSql}
      ORDER BY ${orderSql}
      LIMIT $${limitParam}`,
@@ -272,11 +270,7 @@ async function getSavedGroups(userId, groupId = null) {
        ${groupFilter}
        AND (
         si.id IS NULL
-        OR (
-          s.is_open = TRUE
-          AND seller.email NOT LIKE '%@dukaanzone.local'
-          AND seller.email NOT LIKE '%@dz.local'
-        )
+        OR s.is_open = TRUE
        )
      ORDER BY sg.created_at DESC, si.name ASC`,
     values,
@@ -502,8 +496,6 @@ discoveryRouter.get('/shops', optionalAuth, async (req, res, next) => {
        INNER JOIN app_users seller ON seller.id = s.seller_id
        WHERE s.is_open = TRUE
           AND (s.payment_qr_payload IS NOT NULL OR s.upi_id IS NOT NULL)
-         AND seller.email NOT LIKE '%@dukaanzone.local'
-         AND seller.email NOT LIKE '%@dz.local'
          ${filterSql}
        ORDER BY s.updated_at DESC, s.created_at DESC
        LIMIT $2`,
@@ -677,8 +669,6 @@ discoveryRouter.get('/saved/products', requireAuth, async (req, res, next) => {
        WHERE saved.user_id = $1
          AND si.is_active = TRUE
          AND s.is_open = TRUE
-         AND seller.email NOT LIKE '%@dukaanzone.local'
-         AND seller.email NOT LIKE '%@dz.local'
        ORDER BY saved.created_at DESC`,
       [req.user.sub],
     );
@@ -751,9 +741,7 @@ discoveryRouter.post('/saved/groups', requireAuth, async (req, res, next) => {
          INNER JOIN app_users seller ON seller.id = s.seller_id
          WHERE si.id = ANY($1::TEXT[])
            AND si.is_active = TRUE
-           AND s.is_open = TRUE
-           AND seller.email NOT LIKE '%@dukaanzone.local'
-           AND seller.email NOT LIKE '%@dz.local'`,
+           AND s.is_open = TRUE`,
         [itemIds],
       );
       if (productResult.rows.length !== itemIds.length) {
@@ -826,9 +814,7 @@ discoveryRouter.patch('/saved/groups/:groupId', requireAuth, async (req, res, ne
            INNER JOIN app_users seller ON seller.id = s.seller_id
            WHERE si.id = ANY($1::TEXT[])
              AND si.is_active = TRUE
-             AND s.is_open = TRUE
-             AND seller.email NOT LIKE '%@dukaanzone.local'
-             AND seller.email NOT LIKE '%@dz.local'`,
+             AND s.is_open = TRUE`,
           [itemIds],
         );
         if (productResult.rows.length !== itemIds.length) {
@@ -1013,9 +999,7 @@ async function getPublicShop(shopId, currentUserId = null, client = { query }) {
      FROM shops s
      INNER JOIN app_users seller ON seller.id = s.seller_id
      WHERE s.id = $1
-       AND s.is_open = TRUE
-       AND seller.email NOT LIKE '%@dukaanzone.local'
-       AND seller.email NOT LIKE '%@dz.local'`,
+       AND s.is_open = TRUE`,
     [shopId, currentUserId],
   );
 
