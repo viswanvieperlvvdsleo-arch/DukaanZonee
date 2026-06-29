@@ -94,7 +94,7 @@ function publicProductQuery({
      ${extraJoinSql}
      WHERE si.is_active = TRUE
        AND s.is_open = TRUE
-       AND s.payment_qr_payload IS NOT NULL
+       AND (s.payment_qr_payload IS NOT NULL OR s.upi_id IS NOT NULL)
        AND seller.email NOT LIKE '%@dukaanzone.local'
        AND seller.email NOT LIKE '%@dz.local'
        ${whereSql}
@@ -501,7 +501,7 @@ discoveryRouter.get('/shops', optionalAuth, async (req, res, next) => {
        FROM shops s
        INNER JOIN app_users seller ON seller.id = s.seller_id
        WHERE s.is_open = TRUE
-         AND s.payment_qr_payload IS NOT NULL
+          AND (s.payment_qr_payload IS NOT NULL OR s.upi_id IS NOT NULL)
          AND seller.email NOT LIKE '%@dukaanzone.local'
          AND seller.email NOT LIKE '%@dz.local'
          ${filterSql}
