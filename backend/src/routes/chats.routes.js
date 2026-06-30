@@ -470,23 +470,42 @@ async function listRooms(user, scope, limit) {
   }
 
   const result = await query(
-    `WITH latest AS (
-      SELECT DISTINCT ON (cm.room_id)
-        cm.id, cm.room_id, cm.scope, cm.text, cm.created_at, cm.shop_id,
-        cm.delivery_status, cm.delivered_at, cm.read_at, cm.message_type,
-        cm.media_name, cm.deleted_at,
-        au.id AS sender_id, au.name AS sender_name, au.role AS sender_role,
+    `WITH message_context AS (
+      SELECT
+        cm.id,
+        'shop:' || s.id || ':user:' || customer_user.id AS room_id,
+        cm.scope,
+        cm.text,
+        cm.created_at,
+        s.id AS shop_id,
+        cm.delivery_status,
+        cm.delivered_at,
+        cm.read_at,
+        cm.message_type,
+        cm.media_name,
+        cm.deleted_at,
+        au.id AS sender_id,
+        au.name AS sender_name,
+        au.role AS sender_role,
         s.seller_id AS shop_seller_id,
         s.name AS shop_name,
         s.category AS shop_category,
         s.block AS shop_block,
-        s.avatar_url AS shop_avatar_url
+        s.avatar_url AS shop_avatar_url,
+        customer_user.id AS customer_id
       FROM chat_messages cm
       INNER JOIN app_users au ON au.id = cm.sender_user_id
+      LEFT JOIN app_users target_user ON target_user.id = cm.target_user_id
       LEFT JOIN shops s ON s.id = cm.shop_id
         OR cm.room_id = 'shop:' || s.id
         OR cm.room_id LIKE 'shop:' || s.id || ':user:%'
         OR LOWER(cm.room_id) = LOWER('shop:' || s.name)
+      LEFT JOIN app_users customer_user ON customer_user.id = CASE
+        WHEN au.role = 'user' THEN cm.sender_user_id
+        WHEN target_user.role = 'user' THEN cm.target_user_id
+        WHEN cm.room_id LIKE 'shop:%:user:%' THEN NULLIF(split_part(cm.room_id, ':user:', 2), '')
+        ELSE NULL
+      END
       WHERE cm.scope = 'shop_payment'
         ${liveAccountFilter}
         AND (
@@ -495,10 +514,15 @@ async function listRooms(user, scope, limit) {
           OR s.seller_id = $1
         )
         AND s.id IS NOT NULL
-      ORDER BY cm.room_id, cm.created_at DESC
+        AND customer_user.id IS NOT NULL
+        AND customer_user.deleted_at IS NULL
+    ),
+    latest AS (
+      SELECT DISTINCT ON (shop_id, customer_id) *
+      FROM message_context
+      ORDER BY shop_id, customer_id, created_at DESC
     )
     SELECT latest.*,
-      customer.id AS customer_id,
       customer.name AS customer_name,
       customer.phone AS customer_phone,
       customer.email AS customer_email,
@@ -506,11 +530,21 @@ async function listRooms(user, scope, limit) {
       (
         SELECT COUNT(*)::INT
         FROM chat_messages unread
+        INNER JOIN app_users unread_sender ON unread_sender.id = unread.sender_user_id
+        LEFT JOIN app_users unread_target ON unread_target.id = unread.target_user_id
         LEFT JOIN shops unread_shop ON unread_shop.id = unread.shop_id
           OR unread.room_id = 'shop:' || unread_shop.id
           OR unread.room_id LIKE 'shop:' || unread_shop.id || ':user:%'
           OR LOWER(unread.room_id) = LOWER('shop:' || unread_shop.name)
-        WHERE unread.room_id = latest.room_id
+        LEFT JOIN app_users unread_customer ON unread_customer.id = CASE
+          WHEN unread_sender.role = 'user' THEN unread.sender_user_id
+          WHEN unread_target.role = 'user' THEN unread.target_user_id
+          WHEN unread.room_id LIKE 'shop:%:user:%' THEN NULLIF(split_part(unread.room_id, ':user:', 2), '')
+          ELSE NULL
+        END
+        WHERE unread.scope = 'shop_payment'
+          AND unread_shop.id = latest.shop_id
+          AND unread_customer.id = latest.customer_id
           AND unread.sender_user_id <> $1
           AND unread.deleted_at IS NULL
           AND unread.read_at IS NULL
@@ -520,29 +554,7 @@ async function listRooms(user, scope, limit) {
           )
       ) AS unread_count
     FROM latest
-    LEFT JOIN LATERAL (
-      SELECT au2.id, au2.name, au2.phone, au2.email, au2.profile_pic
-      FROM app_users au2
-      WHERE (
-          au2.id = NULLIF(split_part(latest.room_id, ':user:', 2), '')
-          OR (
-            NULLIF(split_part(latest.room_id, ':user:', 2), '') IS NULL
-            AND EXISTS (
-              SELECT 1
-              FROM chat_messages cm2
-              WHERE cm2.room_id = latest.room_id
-                AND (cm2.sender_user_id = au2.id OR cm2.target_user_id = au2.id)
-            )
-          )
-        )
-        AND au2.role = 'user'
-        AND au2.deleted_at IS NULL
-      ORDER BY CASE
-        WHEN au2.id = NULLIF(split_part(latest.room_id, ':user:', 2), '') THEN 0
-        ELSE 1
-      END, au2.created_at ASC
-      LIMIT 1
-    ) customer ON TRUE
+    INNER JOIN app_users customer ON customer.id = latest.customer_id
     WHERE NOT EXISTS (
       SELECT 1
       FROM chat_room_hides hide
