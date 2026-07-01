@@ -330,9 +330,29 @@ class _ShopPaymentPageState extends State<ShopPaymentPage> {
       }
       if (_hiddenFromRecents.contains(room.shopName ?? '')) continue;
       if (_isOwnShop(_shopForRoom(room))) continue;
-      final key = room.shopId ?? room.shopName ?? room.roomId;
-      recentByShop.putIfAbsent(key, () => room);
+
+      // Primary key: shopId if available (most specific).
+      // Secondary key: normalised shopName (handles old room_id format where shopId is null).
+      // Using putIfAbsent on BOTH keys ensures the same shop never appears twice
+      // regardless of whether the room came from a legacy or new room_id format.
+      final primaryKey = room.shopId != null && room.shopId!.isNotEmpty
+          ? room.shopId!
+          : null;
+      final nameKey = room.shopName?.trim().toLowerCase();
+
+      // If a room with this shopId already exists, skip.
+      if (primaryKey != null && recentByShop.containsKey(primaryKey)) continue;
+      // If a room with this normalised name already exists, skip.
+      if (nameKey != null && nameKey.isNotEmpty && recentByShop.containsKey('name:$nameKey')) continue;
+
+      final key = primaryKey ?? nameKey ?? room.roomId;
+      recentByShop[key] = room;
+      if (nameKey != null && nameKey.isNotEmpty) {
+        recentByShop.putIfAbsent('name:$nameKey', () => room);
+      }
     }
+    // Remove the name: sentinel keys — keep only real entries
+    recentByShop.removeWhere((k, _) => k.startsWith('name:'));
     final recentRooms = recentByShop.values.take(4).toList();
     final lowerQuery = _query.toLowerCase();
     final visibleByIdentity = <String, Shop>{};
@@ -1134,14 +1154,19 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
       _applyReceipt(event);
       return;
     }
+    // Build the full set of roomIds this conversation could appear under
+    final candidateRooms = _candidateRoomIds().toSet();
+    final eventRoom = event.payload['roomId']?.toString();
+    final roomMatches = eventRoom != null && candidateRooms.contains(eventRoom);
+
     if (event.type == 'chat.deleted') {
-      if (event.payload['roomId'] == _liveRoomId) {
+      if (roomMatches) {
         _markMessageDeleted(event.payload['id']?.toString());
       }
       return;
     }
     if (event.type == 'chat.reacted') {
-      if (event.payload['roomId'] == _liveRoomId) {
+      if (roomMatches) {
         _applyReaction(
           event.payload['id']?.toString(),
           event.payload['reaction']?.toString(),
@@ -1156,7 +1181,7 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
       final sender = Map<String, dynamic>.from(
         event.payload['sender'] as Map? ?? {},
       );
-      if (event.payload['roomId'] != _liveRoomId ||
+      if (!roomMatches ||
           sender['id'] == authService.currentUser.value?.id) {
         return;
       }
@@ -1166,7 +1191,7 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
     }
     if (event.type != 'chat.message' ||
         event.payload['scope'] != 'shop_payment' ||
-        event.payload['roomId'] != _liveRoomId) {
+        !roomMatches) {
       return;
     }
     final sender = Map<String, dynamic>.from(
