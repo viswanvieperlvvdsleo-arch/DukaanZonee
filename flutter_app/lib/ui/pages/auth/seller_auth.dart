@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
+import 'package:dukaan_zone_flutter/services/device_location.dart';
 
 enum SellerAuthStep { login, register }
 
@@ -167,24 +168,11 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
   }
 
   LatLng? _extractCoordinates(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return null;
-    final direct = RegExp(
-      r'^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$',
-    ).firstMatch(trimmed);
-    final atMarker = RegExp(
-      r'@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)',
-    ).firstMatch(trimmed);
-    final queryMarker = RegExp(
-      r'(?:[?&](?:q|query|ll)=)(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)',
-    ).firstMatch(trimmed);
-    final match = direct ?? atMarker ?? queryMarker;
-    if (match == null) return null;
-    final lat = double.tryParse(match.group(1) ?? '');
-    final lng = double.tryParse(match.group(2) ?? '');
-    if (lat == null || lng == null) return null;
-    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
-    return LatLng(lat, lng);
+    return parseMapLinkToLatLng(value);
+  }
+
+  String _mapUrlForCoordinates(LatLng coordinates) {
+    return 'https://www.google.com/maps/search/?api=1&query=${coordinates.latitude},${coordinates.longitude}';
   }
 
   void _applyLocationValue(String rawValue) {
@@ -194,8 +182,7 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
     _selectedLatitude = coordinates?.latitude;
     _selectedLongitude = coordinates?.longitude;
     if (coordinates != null) {
-      _selectedMapUrl =
-          'https://www.google.com/maps/search/?api=1&query=${coordinates.latitude},${coordinates.longitude}';
+      _selectedMapUrl = _mapUrlForCoordinates(coordinates);
       if (_addressController.text.trim().isEmpty ||
           _addressController.text.startsWith('Pinned map location')) {
         _addressController.text =
@@ -212,6 +199,22 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
           'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(value)}';
     }
     setState(() {});
+  }
+
+  Future<void> _useCurrentLocation() async {
+    final location = await getDeviceLocation();
+    if (!mounted) return;
+    if (location == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not read current location. Paste a Google Maps link instead.',
+          ),
+        ),
+      );
+      return;
+    }
+    _applyLocationValue('${location.latitude},${location.longitude}');
   }
 
   Future<void> _showLocationChooser() async {
@@ -284,12 +287,10 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () => Navigator.pop(
-                        context,
-                        '17.72920,83.31500',
-                      ),
+                      onPressed: () =>
+                          Navigator.pop(context, '__CURRENT_LOCATION__'),
                       icon: const Icon(Icons.my_location_outlined),
-                      label: const Text('Use test current'),
+                      label: const Text('Use current'),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
@@ -316,6 +317,10 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
     );
     controller.dispose();
     if (value == null || !mounted) return;
+    if (value == '__CURRENT_LOCATION__') {
+      await _useCurrentLocation();
+      return;
+    }
     _applyLocationValue(value);
   }
 

@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
+import 'package:dukaan_zone_flutter/services/device_location.dart';
 
 class SellerInventoryPage extends StatefulWidget {
   const SellerInventoryPage({super.key});
@@ -971,10 +972,12 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
                                           crop();
                                           final String? resultPath =
                                               await getResult();
-                                          if (mounted)
+                                          if (mounted &&
+                                              dialogContext.mounted) {
                                             Navigator.of(
                                               dialogContext,
                                             ).pop(resultPath);
+                                          }
                                         },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: primary,
@@ -1012,6 +1015,7 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
         if (croppedFile != null && mounted) {
           final imageData = await _croppedImageToDataUrl(croppedFile);
           await sellerBackendService.updateShop(avatarUrl: imageData);
+          if (!mounted) return;
           setState(() => _avatarUrl = imageData);
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -1021,6 +1025,7 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error selecting cover image: $e')),
       );
@@ -1216,7 +1221,7 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
         title: const Text(
           'Edit Shop Details',
@@ -1252,12 +1257,44 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
                 controller: mapCtrl,
                 keyboardType: TextInputType.url,
                 decoration: InputDecoration(
-                  labelText: 'Google Maps Link',
-                  hintText: 'Paste the shop location link',
+                  labelText: 'Map location',
+                  hintText: 'Paste Google Maps link, address, or lat,lng',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
                   prefixIcon: const Icon(Icons.map_outlined),
+                ),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final location = await getDeviceLocation();
+                  if (!mounted) return;
+                  if (location == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Could not read current location. Paste a Google Maps link instead.',
+                        ),
+                      ),
+                    );
+                    return;
+                  }
+                  final lat = location.latitude.toStringAsFixed(6);
+                  final lng = location.longitude.toStringAsFixed(6);
+                  mapCtrl.text = 'https://www.google.com/maps?q=$lat,$lng';
+                  if (addrCtrl.text.trim().isEmpty ||
+                      addrCtrl.text.startsWith('Pinned map location')) {
+                    addrCtrl.text = 'Pinned map location ($lat, $lng)';
+                  }
+                },
+                icon: const Icon(Icons.my_location_outlined),
+                label: const Text('Use current location'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(46),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -1288,7 +1325,7 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text(
               'CANCEL',
               style: TextStyle(color: muted, fontWeight: FontWeight.w900),
@@ -1313,7 +1350,9 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
                 _shopPhone = phoneCtrl.text;
                 _shopBio = bioCtrl.text;
               });
-              Navigator.pop(context);
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext);
+              }
             } catch (error) {
               if (!mounted) return;
               ScaffoldMessenger.of(
@@ -1522,7 +1561,7 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
                     alertEnabled: alertEnabled,
                     isActive: isActive,
                   );
-                  if (!mounted) return;
+                  if (!mounted || !dialogContext.mounted) return;
                   _replaceProduct(updated);
                   Navigator.pop(dialogContext);
                 } catch (error) {
@@ -1545,7 +1584,7 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
     );
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
         title: const Text(
           'Set Alert Threshold',
@@ -1574,7 +1613,7 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text(
               'CANCEL',
               style: TextStyle(color: muted, fontWeight: FontWeight.w900),
@@ -1588,7 +1627,7 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
                 alertThreshold: nextThreshold,
                 alertEnabled: true,
               );
-              if (!mounted) return;
+              if (!mounted || !dialogContext.mounted) return;
               _replaceProduct(updated);
               if (updated['isAlerting'] == true) {
                 soundService.startHourlyAlert(
@@ -1596,7 +1635,7 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
                   updated['name'].toString(),
                 );
               }
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
             } catch (error) {
               if (!mounted) return;
               ScaffoldMessenger.of(
@@ -1612,7 +1651,7 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
   void _showDeleteConfirm(Map<String, dynamic> product) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
         title: const Text(
           'Remove from Shelf?',
@@ -1621,7 +1660,7 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
         content: Text('Are you sure you want to remove "${product['name']}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text(
               'CANCEL',
               style: TextStyle(color: muted, fontWeight: FontWeight.w900),
@@ -1631,11 +1670,11 @@ class _SellerInventoryPageState extends State<SellerInventoryPage> {
             onPressed: () async {
               try {
                 await sellerBackendService.deleteItem(product['id'].toString());
-                if (!mounted) return;
+                if (!mounted || !dialogContext.mounted) return;
                 setState(
                   () => _products.removeWhere((p) => p['id'] == product['id']),
                 );
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
               } catch (error) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(

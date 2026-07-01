@@ -42,7 +42,7 @@ const shopUpdateSchema = z.object({
   paymentQrPayload: z.string().trim().min(8).max(2000).optional(),
   upiId: z.string().trim().max(120).optional(),
   avatarUrl: z.string().trim().max(1_000_000).optional(),
-  mapUrl: z.string().trim().url().max(2000).optional(),
+  mapUrl: z.string().trim().max(2000).optional(),
   isOpen: z.boolean().optional(),
   clearPaymentQr: z.boolean().optional(),
 });

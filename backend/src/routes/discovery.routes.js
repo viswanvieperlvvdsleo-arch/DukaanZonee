@@ -8,6 +8,16 @@ import { makeId } from '../utils/ids.js';
 
 export const discoveryRouter = express.Router();
 
+const PUBLIC_DEMO_PRODUCT_FILTER_SQL = `
+       AND LOWER(TRIM(si.name)) NOT IN ('gateway test item', 'test gateway item')
+       AND LOWER(TRIM(s.name)) NOT LIKE 'mock gateway%'`;
+
+const PUBLIC_DEMO_SHOP_FILTER_SQL = `
+       AND LOWER(TRIM(s.name)) NOT LIKE 'mock gateway%'`;
+
+const PUBLIC_DEMO_SHOP_FILTER_UNALIASED_SQL = `
+       AND LOWER(TRIM(name)) NOT LIKE 'mock gateway%'`;
+
 const searchSchema = z.object({
   q: z.string().trim().max(120).optional(),
   limit: z.coerce.number().int().min(1).max(80).default(40),
@@ -94,6 +104,7 @@ function publicProductQuery({
      ${extraJoinSql}
      WHERE si.is_active = TRUE
        AND s.is_open = TRUE
+       ${PUBLIC_DEMO_PRODUCT_FILTER_SQL}
        ${whereSql}
      ORDER BY ${orderSql}
      LIMIT $${limitParam}`,
@@ -494,6 +505,7 @@ discoveryRouter.get('/shops', optionalAuth, async (req, res, next) => {
        FROM shops s
        INNER JOIN app_users seller ON seller.id = s.seller_id
        WHERE s.is_open = TRUE
+         ${PUBLIC_DEMO_SHOP_FILTER_SQL}
          ${filterSql}
        ORDER BY s.updated_at DESC, s.created_at DESC
        LIMIT $2`,
@@ -524,7 +536,8 @@ discoveryRouter.post('/shops/:shopId/follow', requireAuth, async (req, res, next
       const shopResult = await client.query(
         `SELECT id, seller_id, name
          FROM shops
-         WHERE id = $1 AND is_open = TRUE`,
+         WHERE id = $1 AND is_open = TRUE
+         ${PUBLIC_DEMO_SHOP_FILTER_UNALIASED_SQL}`,
         [req.params.shopId],
       );
 
@@ -596,7 +609,8 @@ discoveryRouter.delete('/shops/:shopId/follow', requireAuth, async (req, res, ne
     const shopResult = await query(
       `SELECT id, seller_id
        FROM shops
-       WHERE id = $1 AND is_open = TRUE`,
+       WHERE id = $1 AND is_open = TRUE
+       ${PUBLIC_DEMO_SHOP_FILTER_UNALIASED_SQL}`,
       [req.params.shopId],
     );
     const sellerId = shopResult.rows[0]?.seller_id;
@@ -667,6 +681,7 @@ discoveryRouter.get('/saved/products', requireAuth, async (req, res, next) => {
        WHERE saved.user_id = $1
          AND si.is_active = TRUE
          AND s.is_open = TRUE
+         ${PUBLIC_DEMO_PRODUCT_FILTER_SQL}
        ORDER BY saved.created_at DESC`,
       [req.user.sub],
     );
@@ -737,9 +752,10 @@ discoveryRouter.post('/saved/groups', requireAuth, async (req, res, next) => {
          FROM shelf_items si
          INNER JOIN shops s ON s.id = si.shop_id
          INNER JOIN app_users seller ON seller.id = s.seller_id
-         WHERE si.id = ANY($1::TEXT[])
-           AND si.is_active = TRUE
-           AND s.is_open = TRUE`,
+          WHERE si.id = ANY($1::TEXT[])
+            AND si.is_active = TRUE
+            AND s.is_open = TRUE
+            ${PUBLIC_DEMO_PRODUCT_FILTER_SQL}`,
         [itemIds],
       );
       if (productResult.rows.length !== itemIds.length) {
@@ -810,9 +826,10 @@ discoveryRouter.patch('/saved/groups/:groupId', requireAuth, async (req, res, ne
            FROM shelf_items si
            INNER JOIN shops s ON s.id = si.shop_id
            INNER JOIN app_users seller ON seller.id = s.seller_id
-           WHERE si.id = ANY($1::TEXT[])
-             AND si.is_active = TRUE
-             AND s.is_open = TRUE`,
+            WHERE si.id = ANY($1::TEXT[])
+              AND si.is_active = TRUE
+              AND s.is_open = TRUE
+              ${PUBLIC_DEMO_PRODUCT_FILTER_SQL}`,
           [itemIds],
         );
         if (productResult.rows.length !== itemIds.length) {
@@ -882,7 +899,8 @@ discoveryRouter.post('/products/:productId/reviews', requireAuth, async (req, re
       `SELECT si.id, si.name, s.id AS shop_id, s.name AS shop_name, s.seller_id
        FROM shelf_items si
        INNER JOIN shops s ON s.id = si.shop_id
-       WHERE si.id = $1 AND si.is_active = TRUE AND s.is_open = TRUE`,
+       WHERE si.id = $1 AND si.is_active = TRUE AND s.is_open = TRUE
+       ${PUBLIC_DEMO_PRODUCT_FILTER_SQL}`,
       [req.params.productId],
     );
 
@@ -997,7 +1015,8 @@ async function getPublicShop(shopId, currentUserId = null, client = { query }) {
      FROM shops s
      INNER JOIN app_users seller ON seller.id = s.seller_id
      WHERE s.id = $1
-       AND s.is_open = TRUE`,
+       AND s.is_open = TRUE
+       ${PUBLIC_DEMO_SHOP_FILTER_SQL}`,
     [shopId, currentUserId],
   );
 

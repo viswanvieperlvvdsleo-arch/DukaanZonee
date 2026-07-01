@@ -368,7 +368,18 @@ const statements = [
   `CREATE INDEX IF NOT EXISTS call_records_room_started_idx
     ON call_records(room_id, started_at DESC)`,
   `CREATE INDEX IF NOT EXISTS call_records_caller_started_idx
-    ON call_records(caller_user_id, started_at DESC)`,
+     ON call_records(caller_user_id, started_at DESC)`,
+
+  `UPDATE shelf_items
+   SET is_active = FALSE, updated_at = NOW()
+   WHERE LOWER(TRIM(name)) IN ('gateway test item', 'test gateway item')
+      OR shop_id IN (
+        SELECT id FROM shops WHERE LOWER(TRIM(name)) LIKE 'mock gateway%'
+      )`,
+
+  `UPDATE shops
+   SET is_open = FALSE, updated_at = NOW()
+   WHERE LOWER(TRIM(name)) LIKE 'mock gateway%'`,
 ];
 
 async function migrate() {

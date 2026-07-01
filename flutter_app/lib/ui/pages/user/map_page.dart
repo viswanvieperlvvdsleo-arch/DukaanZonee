@@ -3,12 +3,13 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:dukaan_zone_flutter/dukaan.dart';
 
 class UserMapPage extends StatefulWidget {
   const UserMapPage({super.key});
 
-@override
+  @override
   State<UserMapPage> createState() => _UserMapPageState();
 }
 
@@ -49,6 +50,33 @@ class _UserMapPageState extends State<UserMapPage> {
     _updateMarkers(globalSearchQuery.value);
   }
 
+  LatLng? _liveShopPosition(Shop shop) {
+    final parsed = parseMapLinkToLatLng(shop.mapUrl);
+    if (parsed != null) return parsed;
+
+    final lat = shop.location.latitude;
+    final lng = shop.location.longitude;
+    if (lat.abs() > 0.0001 || lng.abs() > 0.0001) {
+      return shop.location;
+    }
+
+    return null;
+  }
+
+  LatLng _shopPosition(Shop shop, [int index = 0]) {
+    final livePosition = _liveShopPosition(shop);
+    if (livePosition != null) return livePosition;
+
+    final safeIndex = index < 0 ? 0 : index;
+    final angle = (safeIndex % 8) * (math.pi / 4);
+    final ring = safeIndex ~/ 8;
+    final radius = 0.006 + (ring * 0.003);
+    return LatLng(
+      _initialPosition.target.latitude + math.sin(angle) * radius,
+      _initialPosition.target.longitude + math.cos(angle) * radius,
+    );
+  }
+
   bool _shouldRefreshMap(String type) {
     final normalized = type.toLowerCase();
     return normalized.contains('shop') ||
@@ -80,7 +108,7 @@ class _UserMapPageState extends State<UserMapPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _shops = shops;
+        _shops = const [];
         _loading = false;
         _error = 'Could not load live shop map.';
       });
@@ -92,16 +120,25 @@ class _UserMapPageState extends State<UserMapPage> {
     final filtered = _filteredShops(query);
 
     setState(() {
-      _markers = filtered.map((shop) => Marker(
-        markerId: MarkerId(shop.id ?? shop.name),
-        position: shop.location,
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        onTap: () => _selectShop(shop),
-      )).toSet();
+      _markers = filtered
+          .asMap()
+          .entries
+          .map((entry) {
+            final shop = entry.value;
+            return Marker(
+              markerId: MarkerId(shop.id ?? shop.name),
+              position: _shopPosition(shop, entry.key),
+              icon: BitmapDescriptor.defaultMarkerWithHue(
+                BitmapDescriptor.hueRed,
+              ),
+              onTap: () => _selectShop(shop),
+            );
+          })
+          .toSet();
     });
 
     if (filtered.isNotEmpty && query.isNotEmpty) {
-      _animateTo(filtered.first.location);
+      _animateTo(_shopPosition(filtered.first, 0));
     }
   }
 
@@ -116,7 +153,7 @@ class _UserMapPageState extends State<UserMapPage> {
   }
 
   List<Shop> _filteredShops(String query) {
-    final source = _shops.isEmpty ? shops : _shops;
+    final source = _shops;
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) return source;
     return source.where((shop) {
@@ -133,12 +170,22 @@ class _UserMapPageState extends State<UserMapPage> {
     }).toList();
   }
 
+  int _shopIndex(Shop shop) {
+    final visible = _filteredShops(globalSearchQuery.value);
+    final index = visible.indexWhere((item) {
+      if (shop.id != null && item.id == shop.id) return true;
+      return item.name == shop.name;
+    });
+    return index < 0 ? 0 : index;
+  }
+
   String? _matchedItemLabel(Shop shop) {
     final normalized = globalSearchQuery.value.trim().toLowerCase();
     if (normalized.isEmpty) return null;
     ShopShelfItem? match;
     for (final item in shop.items) {
-      final isMatch = item.name.toLowerCase().contains(normalized) ||
+      final isMatch =
+          item.name.toLowerCase().contains(normalized) ||
           (item.category ?? '').toLowerCase().contains(normalized) ||
           (item.barcode ?? '').toLowerCase().contains(normalized);
       if (isMatch) {
@@ -205,7 +252,7 @@ class _UserMapPageState extends State<UserMapPage> {
             if (_loading)
               Positioned.fill(
                 child: Container(
-                  color: Colors.white.withOpacity(0.72),
+                  color: Colors.white.withValues(alpha: 0.72),
                   child: const Center(child: CircularProgressIndicator()),
                 ),
               ),
@@ -227,7 +274,11 @@ class _UserMapPageState extends State<UserMapPage> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildPill('Nearby Shops', Icons.storefront, active: true),
+                      _buildPill(
+                        'Nearby Shops',
+                        Icons.storefront,
+                        active: true,
+                      ),
                       const SizedBox(width: 8),
                       _buildPill('Grocery', Icons.shopping_basket),
                       const SizedBox(width: 8),
@@ -238,8 +289,7 @@ class _UserMapPageState extends State<UserMapPage> {
               ),
 
             // Routing Overlay
-            if (isRouting)
-              _buildRoutingOverlay(mapState),
+            if (isRouting) _buildRoutingOverlay(mapState),
 
             // Floating Action Buttons
             Positioned(
@@ -265,7 +315,12 @@ class _UserMapPageState extends State<UserMapPage> {
 
             // Routing Progress Sheet
             if (isRouting)
-              Positioned(bottom: 0, left: 0, right: 0, child: _buildRoutingSheet()),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: _buildRoutingSheet(),
+              ),
           ],
         );
       },
@@ -285,9 +340,7 @@ class _UserMapPageState extends State<UserMapPage> {
       ),
       child: Stack(
         children: [
-          Positioned.fill(
-            child: CustomPaint(painter: _MapGridPainter()),
-          ),
+          Positioned.fill(child: CustomPaint(painter: _MapGridPainter())),
           if (isRouting)
             Positioned(
               left: 52,
@@ -296,7 +349,7 @@ class _UserMapPageState extends State<UserMapPage> {
               child: Container(
                 height: 5,
                 decoration: BoxDecoration(
-                  color: primary.withOpacity(0.45),
+                  color: primary.withValues(alpha: 0.45),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -398,9 +451,7 @@ class _UserMapPageState extends State<UserMapPage> {
                 ],
               ),
               child: Text(
-                kIsWeb
-                    ? 'Live item map fallback'
-                    : 'Live item map',
+                'Live item map',
                 style: const TextStyle(
                   color: primary,
                   fontWeight: FontWeight.w900,
@@ -422,7 +473,7 @@ class _UserMapPageState extends State<UserMapPage> {
         points: [const LatLng(17.7292, 83.3150), dest],
         color: Colors.blue,
         width: 6,
-      )
+      ),
     };
   }
 
@@ -432,7 +483,13 @@ class _UserMapPageState extends State<UserMapPage> {
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, -4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -445,12 +502,24 @@ class _UserMapPageState extends State<UserMapPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(shop.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-                    Text('${shop.type} • ${shop.block}', style: const TextStyle(color: muted, fontSize: 14)),
+                    Text(
+                      shop.name,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      '${shop.type} • ${shop.block}',
+                      style: const TextStyle(color: muted, fontSize: 14),
+                    ),
                   ],
                 ),
               ),
-              IconButton(icon: const Icon(Icons.close), onPressed: () => setState(() => _selectedShop = null)),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => setState(() => _selectedShop = null),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -462,11 +531,14 @@ class _UserMapPageState extends State<UserMapPage> {
                     context,
                     shopName: shop.name,
                     mapUrl: shop.mapUrl,
-                    destination: shop.location,
+                    destination: _shopPosition(shop, _shopIndex(shop)),
                   ),
                   icon: const Icon(Icons.directions),
                   label: const Text('Directions'),
-                  style: FilledButton.styleFrom(backgroundColor: const Color(0xFF007A87), padding: const EdgeInsets.symmetric(vertical: 16)),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF007A87),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -478,7 +550,9 @@ class _UserMapPageState extends State<UserMapPage> {
                   ),
                   icon: const Icon(Icons.storefront),
                   label: const Text('View Shop'),
-                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                 ),
               ),
             ],
@@ -491,16 +565,31 @@ class _UserMapPageState extends State<UserMapPage> {
 
   Widget _buildRoutingOverlay(MapState state) {
     return Positioned(
-      top: 16, left: 16, right: 16,
+      top: 16,
+      left: 16,
+      right: 16,
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: shadowLg),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: shadowLg,
+        ),
         child: Row(
           children: [
             const Icon(Icons.directions_car, color: Colors.blue),
             const SizedBox(width: 12),
-            Expanded(child: Text('Route to ${state.destinationName}', style: const TextStyle(fontWeight: FontWeight.w700))),
-            IconButton(icon: const Icon(Icons.close), onPressed: () => globalMapState.value = MapState(mode: MapMode.standard)),
+            Expanded(
+              child: Text(
+                'Route to ${state.destinationName}',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close),
+              onPressed: () =>
+                  globalMapState.value = MapState(mode: MapMode.standard),
+            ),
           ],
         ),
       ),
@@ -510,24 +599,57 @@ class _UserMapPageState extends State<UserMapPage> {
   Widget _buildRoutingSheet() {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32)), boxShadow: shadowLg),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: shadowLg,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Column(children: [Text('14 min', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)), Text('Fastest route', style: TextStyle(color: muted, fontSize: 12))]),
-              Column(children: [Text('2.4 km', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)), Text('Distance', style: TextStyle(color: muted, fontSize: 12))]),
+              Column(
+                children: [
+                  Text(
+                    '14 min',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
+                  ),
+                  Text(
+                    'Fastest route',
+                    style: TextStyle(color: muted, fontSize: 12),
+                  ),
+                ],
+              ),
+              Column(
+                children: [
+                  Text(
+                    '2.4 km',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
+                  ),
+                  Text(
+                    'Distance',
+                    style: TextStyle(color: muted, fontSize: 12),
+                  ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: () => globalMapState.value = MapState(mode: MapMode.standard),
-              style: FilledButton.styleFrom(backgroundColor: const Color(0xFF007A87), padding: const EdgeInsets.symmetric(vertical: 16)),
-              child: const Text('Exit Navigation', style: TextStyle(fontWeight: FontWeight.w900)),
+              onPressed: () =>
+                  globalMapState.value = MapState(mode: MapMode.standard),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF007A87),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text(
+                'Exit Navigation',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
             ),
           ),
         ],
@@ -535,7 +657,12 @@ class _UserMapPageState extends State<UserMapPage> {
     );
   }
 
-  Widget _buildPill(String text, IconData icon, {bool active = false, VoidCallback? onTap}) {
+  Widget _buildPill(
+    String text,
+    IconData icon, {
+    bool active = false,
+    VoidCallback? onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -544,14 +671,33 @@ class _UserMapPageState extends State<UserMapPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: active ? Colors.blue[100]! : Colors.grey[300]!, width: 1.5),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))],
+          border: Border.all(
+            color: active ? Colors.blue[100]! : Colors.grey[300]!,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: active ? Colors.blue[700] : Colors.black87),
+            Icon(
+              icon,
+              size: 18,
+              color: active ? Colors.blue[700] : Colors.black87,
+            ),
             const SizedBox(width: 8),
-            Text(text, style: TextStyle(color: active ? Colors.blue[800] : Colors.black87, fontWeight: FontWeight.w600)),
+            Text(
+              text,
+              style: TextStyle(
+                color: active ? Colors.blue[800] : Colors.black87,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
@@ -560,8 +706,13 @@ class _UserMapPageState extends State<UserMapPage> {
 
   Widget _buildMapActionButton(IconData icon) {
     return Container(
-      width: 48, height: 48,
-      decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: shadowSm),
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: shadowSm,
+      ),
       child: Icon(icon, color: Colors.black87, size: 24),
     );
   }
@@ -598,11 +749,11 @@ class _MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final roadPaint = Paint()
-      ..color = Colors.white.withOpacity(0.78)
+      ..color = Colors.white.withValues(alpha: 0.78)
       ..strokeWidth = 10
       ..strokeCap = StrokeCap.round;
     final minorPaint = Paint()
-      ..color = const Color(0xFFD7E3F5).withOpacity(0.58)
+      ..color = const Color(0xFFD7E3F5).withValues(alpha: 0.58)
       ..strokeWidth = 2;
 
     for (double x = -40; x < size.width + 80; x += 86) {

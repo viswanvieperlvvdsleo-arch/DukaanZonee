@@ -1420,6 +1420,57 @@ class LiveSocketService {
 
 final liveSocketService = LiveSocketService();
 
+LatLng? parseMapLinkToLatLng(String? value) {
+  final raw = value?.trim();
+  if (raw == null || raw.isEmpty) return null;
+  final decoded = Uri.decodeFull(raw);
+
+  LatLng? fromMatch(RegExpMatch? match) {
+    if (match == null) return null;
+    final latitude = double.tryParse(match.group(1) ?? '');
+    final longitude = double.tryParse(match.group(2) ?? '');
+    if (latitude == null || longitude == null) return null;
+    if (latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
+        longitude > 180) {
+      return null;
+    }
+    return LatLng(latitude, longitude);
+  }
+
+  final direct = fromMatch(
+    RegExp(
+      r'^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$',
+    ).firstMatch(decoded),
+  );
+  if (direct != null) return direct;
+
+  final atMarker = fromMatch(
+    RegExp(r'@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)').firstMatch(decoded),
+  );
+  if (atMarker != null) return atMarker;
+
+  final bangMarker = fromMatch(
+    RegExp(r'!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)').firstMatch(decoded),
+  );
+  if (bangMarker != null) return bangMarker;
+
+  final uri = Uri.tryParse(raw);
+  if (uri != null) {
+    for (final key in ['q', 'query', 'll', 'destination', 'center']) {
+      final parsed = parseMapLinkToLatLng(uri.queryParameters[key]);
+      if (parsed != null) return parsed;
+    }
+  }
+
+  return fromMatch(
+    RegExp(
+      r'(-?\d{1,2}(?:\.\d+)?),\s*(-?\d{1,3}(?:\.\d+)?)',
+    ).firstMatch(decoded),
+  );
+}
+
 Future<void> openShopLocation(
   BuildContext context, {
   required String shopName,
@@ -1427,21 +1478,44 @@ Future<void> openShopLocation(
   LatLng? destination,
 }) async {
   final trimmedUrl = mapUrl?.trim() ?? '';
+  final resolvedDestination = destination ?? parseMapLinkToLatLng(trimmedUrl);
   if (trimmedUrl.isNotEmpty) {
     final uri = Uri.tryParse(trimmedUrl);
-    if (uri != null && await canLaunchUrl(uri)) {
+    if (uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
       return;
     }
   }
 
-  globalMapState.value = MapState(
-    mode: MapMode.routing,
-    destinationName: shopName,
-    destination: destination,
-  );
+  if (resolvedDestination != null) {
+    globalMapState.value = MapState(
+      mode: MapMode.routing,
+      destinationName: shopName,
+      destination: resolvedDestination,
+    );
+    if (context.mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+    return;
+  }
+
+  if (trimmedUrl.isNotEmpty) {
+    final searchUri = Uri.https('www.google.com', '/maps/search/', {
+      'api': '1',
+      'query': trimmedUrl,
+    });
+    if (await canLaunchUrl(searchUri)) {
+      await launchUrl(searchUri, mode: LaunchMode.externalApplication);
+      return;
+    }
+  }
+
   if (context.mounted) {
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('No map location saved for $shopName')),
+    );
   }
 }
 
