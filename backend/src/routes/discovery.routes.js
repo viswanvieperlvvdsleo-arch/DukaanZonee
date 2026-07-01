@@ -103,7 +103,6 @@ function publicProductQuery({
      INNER JOIN app_users seller ON seller.id = s.seller_id
      ${extraJoinSql}
      WHERE si.is_active = TRUE
-       AND s.is_open = TRUE
        ${PUBLIC_DEMO_PRODUCT_FILTER_SQL}
        ${whereSql}
      ORDER BY ${orderSql}
