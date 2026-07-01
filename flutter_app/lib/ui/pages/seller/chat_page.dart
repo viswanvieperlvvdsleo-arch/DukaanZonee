@@ -90,7 +90,10 @@ class _SellerChatPageState extends State<SellerChatPage> {
 
     if (isMine) {
       setState(() {
-        final index = _neighbors.indexWhere((n) => n['roomId'] == roomId);
+        // Match by roomId first, then fall back to userId (handles old vs new room_id formats)
+        final index = _neighbors.indexWhere(
+          (n) => n['roomId'] == roomId || (userId != null && n['userId'] == userId),
+        );
         if (index == -1) return;
         final existing = Map<String, dynamic>.from(_neighbors.removeAt(index));
         existing['lastMessage'] = text;
@@ -250,10 +253,22 @@ class _SellerChatPageState extends State<SellerChatPage> {
     try {
       final rooms = await chatHistoryService.listRooms();
       if (!mounted) return;
+
+      // Deduplicate by userId — keep only the most-recent room per customer.
+      // This handles legacy room_id formats (shop:<name>) vs new format
+      // (shop:<id>:user:<userId>) that can cause the same contact to appear twice.
+      final seen = <String, Map<String, dynamic>>{};
+      for (final contact in rooms.map(_contactFromRoom)) {
+        final key = (contact['userId'] as String?) ?? (contact['roomId'] as String? ?? '');
+        if (key.isEmpty) continue;
+        // First occurrence wins (rooms are already sorted newest-first from the API)
+        seen.putIfAbsent(key, () => contact);
+      }
+
       setState(() {
         _neighbors
           ..clear()
-          ..addAll(rooms.map(_contactFromRoom));
+          ..addAll(seen.values);
         _loadingRooms = false;
       });
     } catch (_) {
