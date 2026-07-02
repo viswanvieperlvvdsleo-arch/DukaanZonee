@@ -58,8 +58,8 @@ class ApiClient {
     await _send('DELETE', path);
   }
 
-  Future<Map<String, dynamic>> deleteJsonWithResponse(String path) {
-    return _send('DELETE', path);
+  Future<Map<String, dynamic>> deleteJsonWithResponse(String path, {Map<String, dynamic>? body}) {
+    return _send('DELETE', path, body: body);
   }
 
   Future<Map<String, dynamic>> _send(
@@ -77,7 +77,7 @@ class ApiClient {
     try {
       final response = switch (method) {
         'GET' => await _httpClient.get(uri, headers: headers),
-        'DELETE' => await _httpClient.delete(uri, headers: headers),
+        'DELETE' => await _httpClient.delete(uri, headers: headers, body: body != null ? jsonEncode(body) : null),
         'PATCH' => await _httpClient.patch(
           uri,
           headers: headers,

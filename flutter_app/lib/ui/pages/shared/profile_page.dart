@@ -21,6 +21,88 @@ class _ProfilePageState extends State<ProfilePage> {
         .catchError((_) {});
   }
 
+  Future<void> _showDeleteAccountDialog(BuildContext context) async {
+    final passwordCtrl = TextEditingController();
+    bool isDeleting = false;
+    String? errorMessage;
+
+    bool _obscurePassword = true;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) {
+          return AlertDialog(
+            title: const Text('Delete Account', style: TextStyle(color: Colors.red)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Are you sure? This action is permanent and cannot be undone. Enter your password to confirm.'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passwordCtrl,
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    errorText: errorMessage,
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isDeleting ? null : () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: isDeleting
+                    ? null
+                    : () async {
+                        final pw = passwordCtrl.text.trim();
+                        if (pw.isEmpty) {
+                          setState(() => errorMessage = 'Please enter your password.');
+                          return;
+                        }
+                        setState(() {
+                          isDeleting = true;
+                          errorMessage = null;
+                        });
+                        try {
+                          await authService.deleteAccount(pw);
+                          if (!ctx.mounted) return;
+                          Navigator.pop(ctx);
+                          pushRoot(context, const EntryPage());
+                        } catch (e) {
+                          setState(() {
+                            isDeleting = false;
+                            errorMessage = e.toString().replaceFirst('Exception: ', '');
+                          });
+                        }
+                      },
+                child: isDeleting
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Delete', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,6 +153,23 @@ class _ProfilePageState extends State<ProfilePage> {
             const _SupportSection(),
             const SizedBox(height: 48),
 
+            // Delete Account Button
+            Center(
+              child: TextButton.icon(
+                onPressed: () => _showDeleteAccountDialog(context),
+                icon: const Icon(Icons.delete_forever, color: Colors.redAccent),
+                label: const Text(
+                  'Delete Account',
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
             // Sign Out Button
             Center(
               child: TextButton.icon(
@@ -78,11 +177,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   authService.logout();
                   pushRoot(context, const EntryPage());
                 },
-                icon: const Icon(Icons.logout, color: Colors.redAccent),
+                icon: const Icon(Icons.logout, color: muted),
                 label: const Text(
                   'Sign Out',
                   style: TextStyle(
-                    color: Colors.redAccent,
+                    color: muted,
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
                   ),

@@ -3,6 +3,7 @@ import { WebSocket, WebSocketServer } from 'ws';
 import { config } from '../config.js';
 import { query } from '../db/pool.js';
 import { makeId } from '../utils/ids.js';
+import { sendPushToUserId } from '../services/push.service.js';
 
 const clientsByUser = new Map();
 const clientsByRole = new Map();
@@ -230,15 +231,28 @@ async function handleChatMessage(socket, payload) {
       roomId: event.roomId,
       status: deliveryStatus,
     });
-    return;
+  } else {
+    publishToUsers([...targetUserIds], 'chat.message', event);
+    send(socket, 'chat.receipt', {
+      id: event.id,
+      roomId: event.roomId,
+      status: deliveryStatus,
+    });
   }
 
-  publishToUsers([...targetUserIds], 'chat.message', event);
-  send(socket, 'chat.receipt', {
-    id: event.id,
-    roomId: event.roomId,
-    status: deliveryStatus,
-  });
+  // Send push notification to all recipients
+  const pushText = event.text ? (event.text.length > 100 ? event.text.slice(0, 97) + '...' : event.text) : 'Sent an attachment';
+  for (const id of recipientIds) {
+    sendPushToUserId(id, {
+      title: \`New message from \${socket.user.name}\`,
+      body: pushText,
+      data: {
+        type: 'chat.message',
+        roomId: event.roomId,
+        scope: event.scope,
+      },
+    }).catch(() => {});
+  }
 }
 
 async function handleChatDelete(socket, payload) {

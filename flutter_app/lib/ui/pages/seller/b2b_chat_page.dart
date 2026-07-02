@@ -1087,7 +1087,7 @@ class _B2BChatRoomPageState extends State<B2BChatRoomPage> {
   }
 
   String _formatChatTime(DateTime? value) {
-    final time = value ?? DateTime.now();
+    final time = (value ?? DateTime.now()).toLocal();
     final hour = time.hour > 12
         ? time.hour - 12
         : (time.hour == 0 ? 12 : time.hour);

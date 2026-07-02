@@ -365,6 +365,15 @@ class MainHeader extends StatelessWidget implements PreferredSizeWidget {
                 color: isDark ? Colors.white : ink,
               ),
             ),
+          if (role == Role.seller)
+            IconButton(
+              onPressed: () => push(context, const SellerItemsPage()),
+              icon: Icon(
+                Icons.storefront_outlined,
+                color: isDark ? Colors.white : ink,
+              ),
+              tooltip: 'Live Feed View',
+            ),
           LiveNotificationBell(iconColor: isDark ? Colors.white : ink),
           IconButton(
             onPressed: () {

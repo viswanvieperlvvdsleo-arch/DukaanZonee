@@ -1021,7 +1021,7 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
   }
 
   String _formatChatTime(DateTime? value) {
-    final n = value ?? DateTime.now();
+    final n = (value ?? DateTime.now()).toLocal();
     final hour = n.hour == 0 ? 12 : (n.hour > 12 ? n.hour - 12 : n.hour);
     return '$hour:${n.minute.toString().padLeft(2, '0')} ${n.hour >= 12 ? 'PM' : 'AM'}';
   }

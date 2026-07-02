@@ -245,6 +245,7 @@ abstract class AuthService {
     String? profilePic,
   });
   Future<void> logout();
+  Future<void> deleteAccount(String password);
 }
 
 class MockAuthService implements AuthService {
@@ -366,6 +367,11 @@ class MockAuthService implements AuthService {
     _isLoggedIn.value = false;
     _currentRole.value = null;
     _currentUser.value = null;
+  }
+
+  @override
+  Future<void> deleteAccount(String password) async {
+    await logout();
   }
 }
 
@@ -591,6 +597,12 @@ class BackendAuthService implements AuthService {
     _isLoggedIn.value = false;
     _currentRole.value = null;
     _currentUser.value = null;
+  }
+
+  @override
+  Future<void> deleteAccount(String password) async {
+    await apiClient.postJson('/api/auth/me/delete', {'password': password});
+    await logout();
   }
 
   Future<void> _applySession(Map<String, dynamic> data) async {
@@ -1125,8 +1137,8 @@ class SavedGroupService {
 
   Product _mapProduct(Map<String, dynamic> item) {
     final shop = Map<String, dynamic>.from(item['shop'] as Map? ?? {});
-    final priceCents = item['priceCents'] as int? ?? 0;
-    final stock = item['stockQty'] as int? ?? 0;
+    final priceCents = int.tryParse(item['priceCents']?.toString() ?? '') ?? 0;
+    final stock = int.tryParse(item['stockQty']?.toString() ?? '') ?? 0;
     final category = item['category']?.toString();
     final shopCategory = shop['category']?.toString();
     final badge =
@@ -1152,8 +1164,8 @@ class SavedGroupService {
       description: item['description']?.toString(),
       shopAvatarUrl: shop['avatarUrl']?.toString(),
       shopMapUrl: shop['mapUrl']?.toString(),
-      shopFollowerCount: shop['followerCount'] as int? ?? 0,
-      shopRating: (shop['rating'] as num?)?.toDouble() ?? 0,
+      shopFollowerCount: int.tryParse(shop['followerCount']?.toString() ?? '') ?? 0,
+      shopRating: double.tryParse(shop['rating']?.toString() ?? '') ?? 0,
       isFollowingShop: shop['isFollowing'] == true,
       isSaved: item['isSaved'] == true,
       promotionId: item['promotionId']?.toString(),
@@ -1193,8 +1205,8 @@ class ShopProfileService {
   }
 
   Shop _mapShop(Map<String, dynamic> shop) {
-    final latitude = (shop['latitude'] as num?)?.toDouble();
-    final longitude = (shop['longitude'] as num?)?.toDouble();
+    final latitude = double.tryParse(shop['latitude']?.toString() ?? '');
+    final longitude = double.tryParse(shop['longitude']?.toString() ?? '');
     final items = (shop['items'] as List? ?? const [])
         .whereType<Map>()
         .map((raw) {
@@ -1204,8 +1216,8 @@ class ShopProfileService {
             name: item['name']?.toString() ?? 'Item',
             category: item['category']?.toString(),
             barcode: item['barcode']?.toString(),
-            stockQty: (item['stockQty'] as num?)?.toInt() ?? 0,
-            priceCents: (item['priceCents'] as num?)?.toInt() ?? 0,
+            stockQty: int.tryParse(item['stockQty']?.toString() ?? '') ?? 0,
+            priceCents: int.tryParse(item['priceCents']?.toString() ?? '') ?? 0,
           );
         })
         .where((item) => item.id.isNotEmpty)
@@ -1214,8 +1226,8 @@ class ShopProfileService {
       shop['name']?.toString() ?? 'Shop',
       shop['block']?.toString() ?? '',
       shop['category']?.toString() ?? 'Local shop',
-      ((shop['rating'] as num?)?.toDouble() ?? 0).toStringAsFixed(1),
-      '${shop['followerCount'] as int? ?? 0}',
+      (double.tryParse(shop['rating']?.toString() ?? '') ?? 0).toStringAsFixed(1),
+      '${int.tryParse(shop['followerCount']?.toString() ?? '') ?? 0}',
       LatLng(latitude ?? 17.7292, longitude ?? 83.3150),
       id: shop['id']?.toString(),
       address: shop['address']?.toString(),
@@ -1224,8 +1236,8 @@ class ShopProfileService {
       phone: shop['phone']?.toString(),
       avatarUrl: shop['avatarUrl']?.toString(),
       mapUrl: shop['mapUrl']?.toString(),
-      followerCount: shop['followerCount'] as int? ?? 0,
-      ratingValue: (shop['rating'] as num?)?.toDouble() ?? 0,
+      followerCount: int.tryParse(shop['followerCount']?.toString() ?? '') ?? 0,
+      ratingValue: double.tryParse(shop['rating']?.toString() ?? '') ?? 0,
       isFollowing: shop['isFollowing'] == true,
       sellerId: shop['sellerId']?.toString() ?? shop['seller_id']?.toString(),
       items: items,
@@ -1251,6 +1263,7 @@ class LiveSocketService {
   final ValueNotifier<Set<String>> onlineUserIds = ValueNotifier<Set<String>>(
     <String>{},
   );
+  final ValueNotifier<int> unreadChatCount = ValueNotifier<int>(0);
 
   Stream<LiveEvent> get events => _events.stream;
   bool get isConnected => _channel != null;
@@ -1282,6 +1295,7 @@ class LiveSocketService {
       onError: (_) => disconnect(),
       cancelOnError: true,
     );
+    refreshUnreadChatCount();
   }
 
   void disconnect() {
@@ -1290,6 +1304,14 @@ class LiveSocketService {
     _channel?.sink.close();
     _channel = null;
     _connectedToken = null;
+  }
+
+  Future<void> refreshUnreadChatCount() async {
+    try {
+      final scope = authService.currentRole == Role.seller ? 'b2b' : 'shop_payment';
+      final data = await apiClient.getJson('/api/chats/unread-count?scope=$scope');
+      unreadChatCount.value = (data['count'] as num?)?.toInt() ?? 0;
+    } catch (_) {}
   }
 
   void send(String type, Map<String, dynamic> payload) {
@@ -1410,6 +1432,9 @@ class LiveSocketService {
           }
           onlineUserIds.value = next;
         }
+      }
+      if (type == 'chat.message' || type == 'chat.read' || type == 'chat.delete') {
+        refreshUnreadChatCount();
       }
       _events.add(LiveEvent(type: type, payload: payload));
     } catch (error) {

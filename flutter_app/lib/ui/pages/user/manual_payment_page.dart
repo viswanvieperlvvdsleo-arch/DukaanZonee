@@ -49,6 +49,7 @@ class _ShopPaymentPageState extends State<ShopPaymentPage> {
   bool _loading = true;
   String _query = '';
   String? _error;
+  String? _debugError;
 
   @override
   void initState() {
@@ -92,8 +93,9 @@ class _ShopPaymentPageState extends State<ShopPaymentPage> {
 
     try {
       shops = await shopProfileService.listShops(query: _query);
-    } catch (_) {
-      // Shop discovery should not hide existing chat rooms.
+    } catch (e, stack) {
+      debugPrint('listShops error: $e\n$stack');
+      _debugError = e.toString();
     }
 
     if (!mounted) return;
@@ -102,9 +104,9 @@ class _ShopPaymentPageState extends State<ShopPaymentPage> {
       if (shops != null) _backendShops = shops;
       _loading = false;
       _error = rooms == null && shops == null
-          ? 'Could not reach DukaanZone backend.'
+          ? 'Could not reach DukaanZone backend. $_debugError'
           : shops == null
-          ? 'Could not load backend shops.'
+          ? 'Could not load backend shops. $_debugError'
           : null;
     });
   }
@@ -1029,7 +1031,7 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
   }
 
   String _formatChatTime(DateTime? value) {
-    final n = value ?? DateTime.now();
+    final n = (value ?? DateTime.now()).toLocal();
     final hour = n.hour == 0 ? 12 : (n.hour > 12 ? n.hour - 12 : n.hour);
     return '$hour:${n.minute.toString().padLeft(2, '0')} ${n.hour >= 12 ? 'PM' : 'AM'}';
   }

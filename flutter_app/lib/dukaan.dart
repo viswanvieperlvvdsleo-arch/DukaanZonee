@@ -28,6 +28,7 @@ export 'ui/pages/seller/seller_profile_page.dart';
 export 'ui/pages/seller/inventory_page.dart';
 export 'ui/pages/seller/analytics_detail_page.dart';
 export 'ui/pages/seller/buyer_history_page.dart';
+export 'ui/pages/seller/seller_items_page.dart';
 export 'ui/pages/shared/app_page.dart';
 export 'ui/pages/shared/help_center_page.dart';
 export 'ui/pages/auth/admin_auth.dart';

@@ -24,6 +24,17 @@ const roomsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(80).default(40),
 });
 
+chatsRouter.get('/unread-count', async (req, res, next) => {
+  try {
+    const scope = req.query.scope === 'b2b' ? 'b2b' : 'shop_payment';
+    const rows = await listRooms(req.user, scope, 100);
+    const count = rows.reduce((acc, row) => acc + Number(row.unread_count ?? 0), 0);
+    res.json({ count });
+  } catch (error) {
+    next(error);
+  }
+});
+
 chatsRouter.get('/rooms', async (req, res, next) => {
   try {
     const input = roomsSchema.parse(req.query);

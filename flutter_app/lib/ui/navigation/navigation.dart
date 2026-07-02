@@ -224,28 +224,7 @@ class _RoleShellState extends State<RoleShell> {
                 child: !hideHugeFab
                     ? GestureDetector(
                         key: const ValueKey('fab_visible'),
-                        onTap: () => _navKeys[selected].currentState?.push(
-                          PageRouteBuilder(
-                            pageBuilder: (_, __, ___) =>
-                                widget.role == Role.user
-                                ? const ShopPaymentPage()
-                                : const SellerChatPage(),
-                            transitionDuration: const Duration(
-                              milliseconds: 250,
-                            ),
-                            reverseTransitionDuration: const Duration(
-                              milliseconds: 200,
-                            ),
-                            transitionsBuilder: (_, animation, __, child) =>
-                                FadeTransition(
-                                  opacity: CurvedAnimation(
-                                    parent: animation,
-                                    curve: Curves.easeOut,
-                                  ),
-                                  child: child,
-                                ),
-                          ),
-                        ),
+                        onTap: () => _selectTab(2),
                         onLongPress: () {
                           Feedback.forLongPress(context);
                           _selectTab(2);
@@ -296,15 +275,33 @@ class _RoleShellState extends State<RoleShell> {
                           ? AnimatedOpacity(
                               opacity: hideHugeFab ? 1.0 : 0.0,
                               duration: const Duration(milliseconds: 300),
-                              child: Icon(items[i].icon),
+                              child: _buildIconWithBadge(items[i]),
                             )
-                          : Icon(items[i].icon),
+                          : _buildIconWithBadge(items[i]),
                       label: items[i].label,
                     ),
                 ],
               ),
       ),
     );
+  }
+
+  Widget _buildIconWithBadge(NavItem item, {Color? color, double? size}) {
+    if (item.label == 'Chats') {
+      return ValueListenableBuilder<int>(
+        valueListenable: liveSocketService.unreadChatCount,
+        builder: (context, count, child) {
+          if (count > 0) {
+            return Badge(
+              label: Text(count > 99 ? '99+' : count.toString()),
+              child: Icon(item.icon, color: color, size: size),
+            );
+          }
+          return Icon(item.icon, color: color, size: size);
+        },
+      );
+    }
+    return Icon(item.icon, color: color, size: size);
   }
 
   Widget _buildScrollableBottomNav(List<NavItem> items) {
@@ -356,8 +353,8 @@ class _RoleShellState extends State<RoleShell> {
                         curve: Curves.easeOutBack,
                         builder: (context, scale, child) => Transform.scale(
                           scale: scale,
-                          child: Icon(
-                            items[i].icon,
+                          child: _buildIconWithBadge(
+                            items[i],
                             color: isSelected ? primary : muted,
                             size: 22,
                           ),
@@ -447,7 +444,7 @@ class NavItem {
 List<NavItem> destinations(Role role) => switch (role) {
   Role.user => [
     const NavItem('Home', Icons.home_outlined, UserHomePage.new),
-    const NavItem('Map', Icons.map_outlined, UserMapPage.new),
+    const NavItem('Chats', Icons.chat_bubble_outline, ShopPaymentPage.new),
     const NavItem('Scan', Icons.qr_code_scanner, UserScanPage.new),
     const NavItem('Saved', Icons.favorite_border, UserSavedPage.new),
     const NavItem('History', Icons.history_rounded, UserHistoryPage.new),
@@ -456,7 +453,7 @@ List<NavItem> destinations(Role role) => switch (role) {
     const NavItem('Dash', Icons.dashboard_outlined, SellerDashboardPage.new),
     const NavItem('Shelf', Icons.inventory_2_outlined, SellerInventoryPage.new),
     const NavItem('Scan', Icons.qr_code_scanner, SellerScanPage.new),
-    const NavItem('B2B Hub', Icons.map_outlined, SellerMapPage.new),
+    const NavItem('Chats', Icons.chat_bubble_outline, SellerChatPage.new),
     const NavItem('B2B Chat', Icons.handshake_outlined, B2BChatPage.new),
   ],
   Role.admin => [

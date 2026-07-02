@@ -356,3 +356,49 @@ authRouter.patch('/me', requireAuth, async (req, res, next) => {
     next(error);
   }
 });
+
+authRouter.post('/me/delete', requireAuth, async (req, res, next) => {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      throw new HttpError(400, 'Password is required to delete account');
+    }
+
+    const userResult = await query(
+      `SELECT id, password_hash, role, email FROM app_users WHERE id = $1 AND deleted_at IS NULL`,
+      [req.user.sub]
+    );
+
+    const user = userResult.rows[0];
+    if (!user) {
+      throw new HttpError(404, 'User not found or already deleted');
+    }
+
+    const isValid = await bcrypt.compare(password, user.password_hash);
+    if (!isValid) {
+      throw new HttpError(401, 'Incorrect password');
+    }
+
+    await withTransaction(async (client) => {
+      // 1. Mark user as deleted and rename email to free it up
+      await client.query(
+        `UPDATE app_users
+         SET deleted_at = NOW(),
+             email = CONCAT('deleted+', id, '+', email),
+             phone = NULL,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [user.id]
+      );
+
+      // 2. If seller, clear shop identifiers and close it
+      if (user.role === 'seller') {
+        await releaseDeletedSellerShop(client, user.id);
+      }
+    });
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+});
