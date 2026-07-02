@@ -244,7 +244,7 @@ async function handleChatMessage(socket, payload) {
   const pushText = event.text ? (event.text.length > 100 ? event.text.slice(0, 97) + '...' : event.text) : 'Sent an attachment';
   for (const id of recipientIds) {
     sendPushToUserId(id, {
-      title: \`New message from \${socket.user.name}\`,
+      title: `New message from ${socket.user.name}`,
       body: pushText,
       data: {
         type: 'chat.message',
