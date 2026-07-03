@@ -383,11 +383,14 @@ const statements = [
 ];
 
 async function migrate() {
+  console.log('Connecting to database...');
   const client = await pool.connect();
+  console.log('Database connected successfully. Starting transaction...');
   try {
     await client.query('BEGIN');
-    for (const statement of statements) {
-      await client.query(statement);
+    for (let i = 0; i < statements.length; i++) {
+      console.log(`Running statement ${i + 1}/${statements.length}...`);
+      await client.query(statements[i]);
     }
     await client.query('COMMIT');
     console.log('Database migration completed');
