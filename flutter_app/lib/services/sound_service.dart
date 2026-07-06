@@ -33,18 +33,18 @@ class SoundService {
 
   final Map<String, String> _toneUrls = {
     'Default Chime':
-        'https://assets.mixkit.co/active_storage/sfx/2869/2869-600.wav',
+        'https://raw.githubusercontent.com/akx/Notifications/master/wav/Chime.wav',
     'Cash Register':
-        'https://assets.mixkit.co/active_storage/sfx/2019/2019-600.wav',
+        'https://raw.githubusercontent.com/akx/Notifications/master/wav/Tink.wav',
     'Digital Beep':
-        'https://assets.mixkit.co/active_storage/sfx/911/911-600.wav',
+        'https://raw.githubusercontent.com/akx/Notifications/master/wav/Click.wav',
     'Success Ping':
-        'https://assets.mixkit.co/active_storage/sfx/2568/2568-600.wav',
+        'https://raw.githubusercontent.com/akx/Notifications/master/wav/Pop.wav',
     'Alert Siren':
-        'https://assets.mixkit.co/active_storage/sfx/1653/1653-600.wav',
-    'Soft Pop': 'https://assets.mixkit.co/active_storage/sfx/1005/1005-600.wav',
+        'https://raw.githubusercontent.com/akx/Notifications/master/wav/Bell.wav',
+    'Soft Pop': 'https://raw.githubusercontent.com/akx/Notifications/master/wav/Pop.wav',
     'Vroom Engine':
-        'https://assets.mixkit.co/active_storage/sfx/2190/2190-600.wav',
+        'https://raw.githubusercontent.com/akx/Notifications/master/wav/Click.wav',
   };
 
   Future<void> init() async {

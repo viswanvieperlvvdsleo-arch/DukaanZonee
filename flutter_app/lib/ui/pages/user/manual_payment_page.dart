@@ -45,6 +45,7 @@ class _ShopPaymentPageState extends State<ShopPaymentPage> {
   final TextEditingController _searchController = TextEditingController();
   StreamSubscription<LiveEvent>? _liveSub;
   List<ChatRoomRecord> _recentRooms = const [];
+  List<CompletedPayment> _history = const [];
   List<Shop> _backendShops = const [];
   bool _loading = true;
   String _query = '';
@@ -84,11 +85,18 @@ class _ShopPaymentPageState extends State<ShopPaymentPage> {
     }
     List<ChatRoomRecord>? rooms;
     List<Shop>? shops;
+    List<CompletedPayment>? history;
 
     try {
       rooms = await chatHistoryService.listRooms();
     } catch (_) {
       // Recent chats should not block shop discovery.
+    }
+
+    try {
+      history = await paymentSessionService.history();
+    } catch (_) {
+      // History should not block shop discovery.
     }
 
     try {
@@ -102,6 +110,7 @@ class _ShopPaymentPageState extends State<ShopPaymentPage> {
     setState(() {
       if (rooms != null) _recentRooms = rooms;
       if (shops != null) _backendShops = shops;
+      if (history != null) _history = history;
       _loading = false;
       _error = rooms == null && shops == null
           ? 'Could not reach DukaanZone backend. $_debugError'
@@ -324,38 +333,31 @@ class _ShopPaymentPageState extends State<ShopPaymentPage> {
 
   @override
   Widget build(BuildContext context) {
-    final recentByShop = <String, ChatRoomRecord>{};
-    for (final room in _recentRooms) {
-      if ((room.shopId == null || room.shopId!.isEmpty) &&
-          (room.shopName == null || room.shopName!.isEmpty)) {
-        continue;
-      }
-      if (_hiddenFromRecents.contains(room.shopName ?? '')) continue;
-      if (_isOwnShop(_shopForRoom(room))) continue;
-
-      // Primary key: shopId if available (most specific).
-      // Secondary key: normalised shopName (handles old room_id format where shopId is null).
-      // Using putIfAbsent on BOTH keys ensures the same shop never appears twice
-      // regardless of whether the room came from a legacy or new room_id format.
-      final primaryKey = room.shopId != null && room.shopId!.isNotEmpty
-          ? room.shopId!
-          : null;
-      final nameKey = room.shopName?.trim().toLowerCase();
-
-      // If a room with this shopId already exists, skip.
-      if (primaryKey != null && recentByShop.containsKey(primaryKey)) continue;
-      // If a room with this normalised name already exists, skip.
-      if (nameKey != null && nameKey.isNotEmpty && recentByShop.containsKey('name:$nameKey')) continue;
-
-      final key = primaryKey ?? nameKey ?? room.roomId;
-      recentByShop[key] = room;
-      if (nameKey != null && nameKey.isNotEmpty) {
-        recentByShop.putIfAbsent('name:$nameKey', () => room);
-      }
+    // Calculate most frequent shops from history
+    final paymentCounts = <String, int>{};
+    for (final p in _history) {
+      if (p.shopName.isEmpty) continue;
+      paymentCounts[p.shopName] = (paymentCounts[p.shopName] ?? 0) + 1;
     }
-    // Remove the name: sentinel keys — keep only real entries
-    recentByShop.removeWhere((k, _) => k.startsWith('name:'));
-    final recentRooms = recentByShop.values.take(4).toList();
+    final sortedShopNames = paymentCounts.keys.toList()
+      ..sort((a, b) => paymentCounts[b]!.compareTo(paymentCounts[a]!));
+    
+    final frequentShops = <Shop>[];
+    for (final name in sortedShopNames) {
+      if (_hiddenFromRecents.contains(name)) continue;
+      final match = _backendShops.where((s) => s.name.trim().toLowerCase() == name.trim().toLowerCase());
+      if (match.isNotEmpty && !_isOwnShop(match.first)) {
+        frequentShops.add(match.first);
+      } else {
+        // Find if we have a room for it to get the avatar
+        final roomMatch = _recentRooms.where((r) => r.shopName?.trim().toLowerCase() == name.trim().toLowerCase());
+        if (roomMatch.isNotEmpty && !_isOwnShop(_shopForRoom(roomMatch.first))) {
+          frequentShops.add(_shopForRoom(roomMatch.first));
+        }
+      }
+      if (frequentShops.length >= 4) break;
+    }
+
     final lowerQuery = _query.toLowerCase();
     final visibleByIdentity = <String, Shop>{};
     for (final shop in _query.isEmpty ? const <Shop>[] : _backendShops) {
@@ -432,7 +434,7 @@ class _ShopPaymentPageState extends State<ShopPaymentPage> {
           ),
 
           const SizedBox(height: 32),
-          const Kicker('RECENT CHATS & PAYMENTS'),
+          const Kicker('FREQUENT SHOPS'),
           const SizedBox(height: 16),
 
           if (_loading)
@@ -440,16 +442,16 @@ class _ShopPaymentPageState extends State<ShopPaymentPage> {
               padding: EdgeInsets.symmetric(vertical: 18),
               child: Center(child: CircularProgressIndicator()),
             )
-          else if (recentRooms.isNotEmpty)
+          else if (frequentShops.isNotEmpty)
             SizedBox(
               height: 126,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
-                itemCount: recentRooms.length,
+                itemCount: frequentShops.length,
                 itemBuilder: (context, i) {
-                  final room = recentRooms[i];
-                  final shop = _shopForRoom(room);
+                  final shop = frequentShops[i];
+                  final room = _roomForShop(shop);
                   final color = [
                     Colors.blue,
                     Colors.purple,
@@ -463,7 +465,7 @@ class _ShopPaymentPageState extends State<ShopPaymentPage> {
                         shop: shop,
                         color: color,
                         room: room,
-                        timeLabel: _roomTime(room.updatedAt),
+                        timeLabel: room != null ? _roomTime(room.updatedAt) : '',
                         onTap: () => _openShopChat(shop, color),
                         onAvatarTap: () =>
                             _showAvatarFullScreen(context, shop, color),
@@ -552,7 +554,7 @@ class _RecentShopTile extends StatelessWidget {
   });
   final Shop shop;
   final Color color;
-  final ChatRoomRecord room;
+  final ChatRoomRecord? room;
   final String timeLabel;
   final VoidCallback onTap;
   final VoidCallback onAvatarTap;
@@ -576,14 +578,14 @@ class _RecentShopTile extends StatelessWidget {
                   Positioned.fill(
                     child: ClipOval(
                       child: ProductImageView(
-                        imageUrl: shop.avatarUrl ?? room.shopAvatarUrl,
+                        imageUrl: shop.avatarUrl ?? room?.shopAvatarUrl,
                         fallbackIcon: Icons.storefront_outlined,
                         fallbackIconSize: 28,
                         fallbackColor: color,
                       ),
                     ),
                   ),
-                  if (room.shopSellerOnline)
+                  if (room?.shopSellerOnline == true)
                     Positioned(
                       right: 1,
                       bottom: 2,
@@ -597,11 +599,11 @@ class _RecentShopTile extends StatelessWidget {
                         ),
                       ),
                     ),
-                  if (room.unreadCount > 0)
+                  if ((room?.unreadCount ?? 0) > 0)
                     Positioned(
                       right: -4,
                       top: -4,
-                      child: _UnreadBadge(count: room.unreadCount),
+                      child: _UnreadBadge(count: room!.unreadCount),
                     ),
                 ],
               ),
@@ -625,14 +627,14 @@ class _RecentShopTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  room.lastMessage,
+                  room?.lastMessage ?? '',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: room.unreadCount > 0 ? ink : muted,
+                    color: (room?.unreadCount ?? 0) > 0 ? ink : muted,
                     fontSize: 10,
-                    fontWeight: room.unreadCount > 0
+                    fontWeight: (room?.unreadCount ?? 0) > 0
                         ? FontWeight.w900
                         : FontWeight.w600,
                   ),
@@ -709,19 +711,48 @@ class _ShopListTile extends StatelessWidget {
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(vertical: 4),
-      leading: Container(
+      leading: SizedBox(
         width: 52,
         height: 52,
-        decoration: const BoxDecoration(
-          color: Color(0xFFF1F5F9),
-          shape: BoxShape.circle,
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: ProductImageView(
-          imageUrl: shop.avatarUrl,
-          fallbackIcon: Icons.storefront_outlined,
-          fallbackIconSize: 22,
-          fallbackColor: primary,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF1F5F9),
+                  shape: BoxShape.circle,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: ProductImageView(
+                  imageUrl: shop.avatarUrl,
+                  fallbackIcon: Icons.storefront_outlined,
+                  fallbackIconSize: 22,
+                  fallbackColor: primary,
+                ),
+              ),
+            ),
+            if (room?.shopSellerOnline == true)
+              Positioned(
+                right: 0,
+                bottom: 2,
+                child: Container(
+                  width: 14,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                ),
+              ),
+            if (unreadCount > 0)
+              Positioned(
+                right: -4,
+                top: -4,
+                child: _UnreadBadge(count: unreadCount),
+              ),
+          ],
         ),
       ),
       title: Text(
