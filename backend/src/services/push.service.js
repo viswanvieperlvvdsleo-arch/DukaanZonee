@@ -100,40 +100,53 @@ export async function sendPushToAccount(accountType, accountId, payload) {
   const tokens = result.rows.map((row) => row.token).filter(Boolean);
   if (tokens.length === 0) return { sent: 0 };
 
-  const response = await messaging.sendEachForMulticast({
-    tokens,
-    notification: {
-      title: payload.title || 'DukaanZone',
-      body: payload.body || '',
-    },
-    data: stringifyData(payload.data ?? {}),
-    android: {
-      priority: 'high',
+  console.log(`FCM: Sending to ${tokens.length} tokens...`);
+  try {
+    const response = await messaging.sendEachForMulticast({
+      tokens,
       notification: {
-        channelId: 'dukaanzone_alerts',
-        sound: 'default',
+        title: payload.title || 'DukaanZone',
+        body: payload.body || '',
       },
-    },
-    apns: {
-      payload: {
-        aps: {
+      data: stringifyData(payload.data ?? {}),
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'dukaanzone_alerts',
           sound: 'default',
         },
       },
-    },
-  });
+      apns: {
+        payload: {
+          aps: {
+            sound: 'default',
+          },
+        },
+      },
+    });
 
-  const staleTokens = [];
-  response.responses.forEach((item, index) => {
-    if (!item.success && invalidTokenCodes.has(item.error?.code)) {
-      staleTokens.push(tokens[index]);
+    console.log(`FCM Send result - Success: ${response.successCount}, Failure: ${response.failureCount}`);
+    response.responses.forEach((res, idx) => {
+      if (!res.success) {
+        console.error(`FCM Token ${idx} failed:`, res.error);
+      }
+    });
+
+    const staleTokens = [];
+    response.responses.forEach((item, index) => {
+      if (!item.success && invalidTokenCodes.has(item.error?.code)) {
+        staleTokens.push(tokens[index]);
+      }
+    });
+    if (staleTokens.length > 0) {
+      await query('DELETE FROM push_tokens WHERE token = ANY($1)', [staleTokens]);
     }
-  });
-  if (staleTokens.length > 0) {
-    await query('DELETE FROM push_tokens WHERE token = ANY($1)', [staleTokens]);
-  }
 
-  return { sent: response.successCount, failed: response.failureCount };
+    return { sent: response.successCount, failed: response.failureCount };
+  } catch (error) {
+    console.error('FCM Multicast error:', error);
+    return { sent: 0, failed: tokens.length, error: error.message };
+  }
 }
 
 function getMessaging() {
