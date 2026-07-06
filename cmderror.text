@@ -1,136 +1,483 @@
-false
-I/GuiUtils(31357): VRR [FRTC] s client update frtcType from 0 to 1
-I/GuiUtils(31357): VRR [FRTC] s client update frtcRate from 0 to 20
-D/OplusGraphicsEvent(31357): FRTCtype change to 0, rate: 0, info: false
-I/GuiUtils(31357): VRR [FRTC] s client update frtcType from 1 to 0
-I/GuiUtils(31357): VRR [FRTC] s client update frtcRate from 20 to 0
-D/VRI[MainActivity](31357): dispatchAppVisibility visible:false mUpcomingWindowFocus:false
-D/VRI[MainActivity](31357): visibilityChanged oldVisibility=true newVisibility=false
-I/SurfaceView(31357): 16650635 surfaceDestroyed
-D/BufferQueueProducer(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLASTConsumer)3](id:7a7d00000003,api:1,p:31357,c:31357)disconnect: api 1
-D/BufferQueueProducer(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLASTConsumer)3](id:7a7d00000003,api:0,p:-1,c:31357) disconnect: api -1
-D/BLASTBufferQueue(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3](f:0,a:2) destructor()
-D/BufferQueueConsumer(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLASTConsumer)3](id:7a7d00000003,api:0,p:-1,c:31357) disconnect
-I/DynamicFramerate [AnimationInfoManager](31357): onWindowVisibilityChanged: viewRoot-android.view.ViewRootImpl@d876d87 visibility changes to 8
-D/SurfaceView(31357): 28270370positionLost mSurfaceControl is null return;
-D/HWUI    (31357): RenderProxy::destroy: this=0xb4000072efd1c700, mContext=0xb4000072efdef000
-D/HWUI    (31357): SkiaVulkanPipeline::setSurface:this=0xb4000073f56b9680, surface=NULL
-D/BufferQueueProducer(31357): [VRI[MainActivity]#2(BLAST Consumer)2](id:7a7d00000002,api:1,p:31357,c:31357) disconnect: api 1
-D/ViewRootImplExtImpl(31357): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=363, isAutolayoutSwdpModified=false, residentWS=false, scenario=0, bounds=Rect(0,0 - 1272, 2800),isFirstDraw=false, relayoutAsync=false, flags=0, newFlags=1468018016, title=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity
-D/VRI[MainActivity](31357): relayoutWindow result,sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1272, 2800), mLastSurfaceSize:Point(1272,2800), mWidth:1272, mHeight:2800,requestedWidth:1272, requestedHeight:2800, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:false, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1272,2800] display=[0,0][1272,2800] parentFrame=[0,0][0,0]}, relayoutResult:2, relayoutAsync:false, mSyncSeqId:0
-D/BLASTBufferQueue(31357): [VRI[MainActivity]#2](f:0,a:1) destructor()
-D/BufferQueueConsumer(31357): [VRI[MainActivity]#2(BLAST Consumer)2](id:7a7d00000002,api:0,p:-1,c:31357) disconnect
-D/VRI[MainActivity](31357): setWindowStopped stopped:true
-I/AutofillManager(31357): onInvisibleForAutofill(): expiringResponse
-D/MediaPlayer(31357): finalize() native_finalize called
-D/MediaPlayer(31357): finalize() native_finalize finished
-D/MediaPlayer(31357): finalize() native_finalize called
-D/MediaPlayer(31357): finalize() native_finalize finished
-D/MediaPlayer(31357): finalize() native_finalize called
-D/MediaPlayer(31357): finalize() native_finalize finished
-D/MediaPlayer(31357): finalize() native_finalize called
-D/MediaPlayer(31357): finalize() native_finalize finished
-D/MediaPlayer(31357): finalize() native_finalize called
-D/MediaPlayer(31357): finalize() native_finalize finished
-D/OplusScrollToTopManager(31357):com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity,This com.android.internal.policy.DecorView{44661ab I.E...... R.....ID 0,0-1272,2800 aid=0 alpha=1.0 viewInfo = }[MainActivity]change focus to false
-D/MediaHTTPConnectionExtImpl(31357): mNeedSetTimeout=false
-D/DNS_CACHE(31357): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res= 0x0, found = 0
-D/DNS_CACHE(31357): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb400007425ca5540
-W/System.err(31357): java.io.IOException
-W/System.err(31357):     at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
-W/System.err(31357):     at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
-W/System.err(31357):     at android.media.MediaHTTPConnection.native_readAt(Native Method)
-W/System.err(31357):     at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
-W/System.err(31357):     at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
-W/System.err(31357):     at android.os.Binder.execTransactInternal(Binder.java:1448)
-W/System.err(31357):     at android.os.Binder.execTransact(Binder.java:1382)
-D/MediaHTTPConnectionExtImpl(31357): mNeedSetTimeout=false
-D/DNS_CACHE(31357): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res= 0x0, found = 0
-D/DNS_CACHE(31357): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000073fc5bf840
-D/VRI[MainActivity](31357): dispatchAppVisibility visible:true mUpcomingWindowFocus:false
-D/VRI[MainActivity](31357): setWindowStopped stopped:false
-D/ViewRootImpl(31357): Skipping stats log for color mode
-D/ActivityThread(31357): ComponentInfo{com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity} checkFinished=false 2
-D/ResourcesManagerExtImpl(31357):applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
-I/DynamicFramerate [AnimationInfoManager](31357): onWindowVisibilityChanged: viewRoot-android.view.ViewRootImpl@d876d87 visibility changes to 0
-D/ViewRootImplExtImpl(31357): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=363, isAutolayoutSwdpModified=false, residentWS=false, scenario=0, bounds=Rect(0,0 - 1272, 2800),isFirstDraw=false, relayoutAsync=false, flags=0, newFlags=1468018016, title=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity
-D/VRI[MainActivity](31357): relayoutWindow result,sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1272, 2800), mLastSurfaceSize:Point(1272,2800), mWidth:1272, mHeight:2800,requestedWidth:1272, requestedHeight:2800, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:true, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1272,2800] display=[0,0][1272,2800] parentFrame=[0,0][0,0]}, relayoutResult:3, relayoutAsync:false, mSyncSeqId:0
-W/VRI[MainActivity](31357): updateBlastSurfaceIfNeeded, surfaceSize:Point(1272, 2800), lastSurfaceSize:Point(1272, 2800), format:-3, blastBufferQueue:null
-D/BufferQueueConsumer(31357): [](id:7a7d00000004,api:0,p:-1,c:31357) connect: controlledByApp=false
-D/BufferQueueConsumer(31357): [VRI[MainActivity]#4(BLAST Consumer)4](id:7a7d00000004,api:0,p:-1,c:31357) setMaxAcquiredBufferCount: 2
-D/BufferQueueProducer(31357): [VRI[MainActivity]#4(BLAST Consumer)4](id:7a7d00000004,api:1,p:31357,c:31357) connect: api=1 producerControlledByApp=true
-D/SurfaceView(31357): 16650635, SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity], layerid: 250263 createBlastSurfaceControls
-D/BufferQueueConsumer(31357): [](id:7a7d00000005,api:0,p:-1,c:31357) connect: controlledByApp=false
-D/BufferQueueConsumer(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:7a7d00000005,api:0,p:-1,c:31357) setMaxAcquiredBufferCount: 2
-I/SurfaceView(31357): 16650635 visibleChanged -- surfaceCreated 
-D/BufferQueueProducer(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:7a7d00000005,api:1,p:31357,c:31357)connect: api=1 producerControlledByApp=true
-D/Surface (31357): Surface::dispatchSetGameApi
-D/Surface (31357): dispatchSetGameApi pid[31357] tid[4253] GameApi[1]
-D/Surface (31357): dispatchSetGameApi res:0
-D/vulkan  (31357): set game api vulkan successfully
-D/BLASTBufferQueue(31357): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 getBufferCacheFlag 0
-D/BLASTBufferQueue(31357): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 getMaxAcquireBufferCount 2
-D/BLASTBufferQueue(31357): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 getOrignalMaxAcquireBufferCount 3
-D/BLASTBufferQueue(31357): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 setMaxAcquireBufferCount 3
-D/BufferQueueConsumer(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:7a7d00000005,api:1,p:31357,c:31357)setMaxAcquiredBufferCount: 3
-D/BLASTBufferQueue(31357): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 setBufferCacheFlag 1
-D/BLASTBufferQueue(31357): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 getBufferCacheFlag 1
-D/SurfaceView(31357): 16650635 handleSyncNoBuffer
-I/SurfaceControl(31357):  setExtendedRangeBrightness sc=Surface(name=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity)/@0x27a737b,currentBufferRatio=1.0,desiredRatio=1.0
-D/SurfaceView(31357): 16650635 dispatchDraw mDrawFinished true isAboveParent false (mPrivateFlags & PFLAG_SKIP_DRAW) 128
-D/SurfaceView(31357): 16650635 clearSurfaceViewPort mCornerRadius 0.0
-D/BLASTBufferQueue(31357): [VRI[MainActivity]#4](f:0,a:1) acquireNextBufferLocked size=1272x2800 mFrameNumber=1 applyTransaction=true mTimestamp=573548430596206(auto) mPendingTransactions.size=0 graphicBufferId=134677289500725 transform=0
-D/VRI[MainActivity](31357): Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true syncBuffer=false
-D/ResourcesManagerExtImpl(31357):applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
-D/BLASTBufferQueue(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5](f:0,a:1) acquireNextBufferLocked size=1272x2800 mFrameNumber=1 applyTransaction=true mTimestamp=573548452909227(auto) mPendingTransactions.size=0 graphicBufferId=134677289500719transform=0
-D/VRI[MainActivity](31357): draw finished. seqId=0
-D/SurfaceView(31357): 16650635 finishedDrawing
-D/SurfaceView(31357): 16650635 performDrawFinishedmAttachedToWindow true
-D/SurfaceView(31357): 16650635 dispatchDraw mDrawFinished true isAboveParent false (mPrivateFlags & PFLAG_SKIP_DRAW) 128
-D/SurfaceView(31357): 16650635 clearSurfaceViewPort mCornerRadius 0.0
-D/VRI[MainActivity](31357): onFocusEvent true
-D/InsetsController(31357): hide(ime(), fromIme=false)
-I/ImeTracker(31357): com.example.dukaan_zone_flutter:bc9ee66b: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
-W/System.err(31357): java.io.IOException
-W/System.err(31357):     at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
-W/System.err(31357):     at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
-W/System.err(31357):     at android.media.MediaHTTPConnection.native_readAt(Native Method)
-W/System.err(31357):     at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
-W/System.err(31357):     at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
-W/System.err(31357):     at android.os.Binder.execTransactInternal(Binder.java:1448)
-W/System.err(31357):     at android.os.Binder.execTransact(Binder.java:1382)
-D/OplusScrollToTopManager(31357):com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity,This com.android.internal.policy.DecorView{44661ab V.E...... R....... 0,0-1272,2800 aid=0 alpha=1.0 viewInfo = }[MainActivity]change focus to true
-D/VRI[MainActivity](31357): onFocusEvent false
-D/VRI[MainActivity](31357): dispatchAppVisibility visible:false mUpcomingWindowFocus:false
-D/VRI[MainActivity](31357): visibilityChanged oldVisibility=true newVisibility=false
-I/SurfaceView(31357): 16650635 surfaceDestroyed
-D/BufferQueueProducer(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:7a7d00000005,api:1,p:31357,c:31357)disconnect: api 1
-D/BufferQueueProducer(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:7a7d00000005,api:0,p:-1,c:31357) disconnect: api -1
-D/BLASTBufferQueue(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5](f:0,a:3) destructor()
-D/BufferQueueConsumer(31357): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:7a7d00000005,api:0,p:-1,c:31357) disconnect
-I/DynamicFramerate [AnimationInfoManager](31357): onWindowVisibilityChanged: viewRoot-android.view.ViewRootImpl@d876d87 visibility changes to 8
-D/SurfaceView(31357): 100675324positionLost mSurfaceControl is nullreturn;
-D/HWUI    (31357): RenderProxy::destroy: this=0xb4000072efd1c700, mContext=0xb4000072efdef000
-D/HWUI    (31357): SkiaVulkanPipeline::setSurface:this=0xb4000073f56b9680, surface=NULL
-D/BufferQueueProducer(31357): [VRI[MainActivity]#4(BLAST Consumer)4](id:7a7d00000004,api:1,p:31357,c:31357) disconnect: api 1
-D/ViewRootImplExtImpl(31357): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=363, isAutolayoutSwdpModified=false, residentWS=false, scenario=0, bounds=Rect(0,0 - 1272, 2800),isFirstDraw=false, relayoutAsync=false, flags=0, newFlags=1468018016, title=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity
-D/VRI[MainActivity](31357): relayoutWindow result,sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1272, 2800), mLastSurfaceSize:Point(1272,2800), mWidth:1272, mHeight:2800,requestedWidth:1272, requestedHeight:2800, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:false, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1272,2800] display=[0,0][1272,2800] parentFrame=[0,0][0,0]}, relayoutResult:2, relayoutAsync:false, mSyncSeqId:0
-D/BLASTBufferQueue(31357): [VRI[MainActivity]#4](f:0,a:1) destructor()
-D/BufferQueueConsumer(31357): [VRI[MainActivity]#4(BLAST Consumer)4](id:7a7d00000004,api:0,p:-1,c:31357) disconnect
-D/VRI[MainActivity](31357): setWindowStopped stopped:true
-I/AutofillManager(31357): onInvisibleForAutofill(): expiringResponse
-D/OplusScrollToTopManager(31357):com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity,This com.android.internal.policy.DecorView{44661ab I.E...... R.....ID 0,0-1272,2800 aid=0 alpha=1.0 viewInfo = }[MainActivity]change focus to false
-D/MediaHTTPConnectionExtImpl(31357): mNeedSetTimeout=false
-D/DNS_CACHE(31357): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res= 0x0, found = 0
-D/DNS_CACHE(31357): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb400007380267b80
-W/System.err(31357): java.io.IOException
-W/System.err(31357):     at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
-W/System.err(31357):     at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
-W/System.err(31357):     at android.media.MediaHTTPConnection.native_readAt(Native Method)
-W/System.err(31357):     at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
-W/System.err(31357):     at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
-W/System.err(31357):     at android.os.Binder.execTransactInternal(Binder.java:1448)
-W/System.err(31357):     at android.os.Binder.execTransact(Binder.java:1382)
+tent extras on the command line instead or see https://github.com/flutter/flutter/blob/main/docs/engine/Flutter-Android-Engine-Flags.md for alternative methods.
+D/FlutterJNI(  322): Beginning load of flutter...
+D/FlutterJNI(  322): flutter (null) was loaded normally!
+I/flutter (  322): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+D/FlutterRenderer(  322): Width is zero. 0,0
+D/FlutterRenderer(  322): Width is zero. 0,0
+D/FlutterJNI(  322): Sending viewport metrics to the engine.
+D/FlutterJNI(  322): Sending viewport metrics to the engine.
+D/VRI[MainActivity](  322): onFocusEvent true
+D/InsetsController(  322): hide(ime(), fromIme=false)
+I/ImeTracker(  322): com.example.dukaan_zone_flutter:a70770a6: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+Syncing files to device CPH2767...                                  86ms
 
-Application
-finished.
+Flutter run key commands.
+r Hot reload. 
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application
+running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on CPH2767 is available at:
+http://127.0.0.1:60373/n5sUFt09-Bw=/
+The Flutter DevTools debugger and profiler on CPH2767 is
+available at:
+http://127.0.0.1:60373/n5sUFt09-Bw=/devtools/?uri=ws://127.0.0.
+1:60373/n5sUFt09-Bw=/ws
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res = 0xb4000073e4c77a00
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res = 0xb40000738f38a580
+D/OplusScrollToTopManager(  322): com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity,This com.android.internal.policy.DecorView{67727fa V.E...... R....... 0,0-1272,2800 aid=0 alpha=1.0 viewInfo = }[MainActivity] change focus to true
+I/FLTFireBGExecutor(  322): Creating background FlutterEngine instance, with args: [--enable-dart-profiling]
+D/FLTFireContextHolder(  322): received application context.
+D/colorx  (  322): I can't find colorx layer , let's enumerate colorx layers first.
+I/TextToSpeech(  322): Sucessfully bound to com.google.android.tts
+I/AdrenoVK-0(  322): ===== BEGIN DUMP OF OVERRIDDEN SETTINGS =====
+I/AdrenoVK-0(  322): ===== END DUMP OF OVERRIDDEN SETTINGS =====
+I/AdrenoVK-0(  322): QUALCOMM build          : 2aaed8fc5d, I4f4b5aa280
+I/AdrenoVK-0(  322): Build Date              : 04/03/26
+I/AdrenoVK-0(  322): Shader Compiler Version : E031.50.19.24
+I/AdrenoVK-0(  322): Local Branch            : 
+I/AdrenoVK-0(  322): Remote Branch           : refs/tags/AU_LINUX_ANDROID_LA.VENDOR.16.2.0.11.00.00.1195.619
+I/AdrenoVK-0(  322): Remote Branch           : NONE
+I/AdrenoVK-0(  322): Reconstruct Branch      : NOTHING
+I/AdrenoVK-0(  322): Build Config            : C P 20.0.0 AArch64
+I/AdrenoVK-0(  322): Driver Path             : /vendor/lib64/hw/vulkan.adreno.so
+I/AdrenoVK-0(  322): Driver Version          : 0842.38
+I/AdrenoVK-0(  322): PFP                     : 0x01310095
+I/AdrenoVK-0(  322): ME                      : 0x01510022
+I/AdrenoVK-0(  322): Application Name    : Impeller
+I/AdrenoVK-0(  322): Process Name        : com.example.dukaan_zone_flutter
+I/AdrenoVK-0(  322): Application Version : 0x00400000
+I/AdrenoVK-0(  322): Engine Name         : Impeller
+I/AdrenoVK-0(  322): Engine Version      : 0x00800000
+I/AdrenoVK-0(  322): Api Version         : 0x00401000
+I/TextToSpeech(  322): Connected to TTS engine
+I/TextToSpeech(  322): Setting up the connection to TTS engine...
+I/flutter (  322): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(62)] Using the Impeller rendering backend (Vulkan).
+I/FLTFireMsgService(  322): FlutterFirebaseMessagingBackgroundService started!
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res = 0xb40000738f38a640
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res = 0xb40000738f38a580
+D/WindowOnBackDispatcher(  322):  predictive settings is disabled for ApplicationInfo{7a96a59 com.example.dukaan_zone_flutter}
+W/WindowOnBackDispatcher(  322): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher(  322): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res = 0xb40000738f38a640
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res = 0xb40000738f38a580
+D/WindowOnBackDispatcher(  322):  predictive settings is disabled for ApplicationInfo{7a96a59 com.example.dukaan_zone_flutter}
+W/WindowOnBackDispatcher(  322): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher(  322): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+D/ProfileInstaller(  322): Installing profile for com.example.dukaan_zone_flutter
+D/MediaPlayer(  322): MediaPlayer
+D/AudioSystem(  322): onNewServiceWithAdapter: media.audio_flinger service obtained 0xb4000072c0fde0c0
+D/AudioSystem(  322): getService: IAudioFlingerService retrieved: 0xb4000072c117a580  IAudioFlinger cached: 0xb4000072c0fde0c0
+V/MediaPlayer(  322): resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+V/MediaPlayer(  322): cleanDrmObj: mDrmObj=null mDrmSessionId=null
+V/MediaHTTPService(  322): MediaHTTPService(android.media.MediaHTTPService@3c9b7d): Cookies: null
+V/MediaHTTPService(  322): makeHTTPConnection: CookieManager created: java.net.CookieManager@dc7a72
+V/MediaHTTPService(  322): makeHTTPConnection(android.media.MediaHTTPService@3c9b7d): cookieHandler: java.net.CookieManager@dc7a72 Cookies: null
+D/MediaHTTPConnectionExtImpl(  322): app com.example.dukaan_zone_flutter
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb40000738f388780
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000073809cf0c0
+W/FinalizerDaemon(  322): type=1400 audit(0.0:1347187): avc:  denied  { getopt } for  path="/dev/socket/usap_pool_primary" scontext=u:r:untrusted_app:s0:c173,c257,c512,c768 tcontext=u:r:zygote:s0 tclass=unix_stream_socket permissive=0 app=com.example.dukaan_zone_flutter
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000073809cf180
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb40000738f38a580
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000073809cf180
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb40000738f38a580
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+I/DynamicFramerate [AnimationSpeedAware](  322): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 0, mVsyncTime = 573803337, mIsMoving = true, mUpdated = true
+D/ViewExtract(  322): [OplusViewExtractManager] OplusViewExtractManager init com.example.dukaan_zone_flutter
+D/OplusInputMethodManagerInternal(  322): get inputMethodManager extension: com.android.internal.view.IInputMethodManager$Stub$Proxy@cc3fad
+I/DynamicFramerate [AnimationSpeedAware](  322): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 1, mVsyncTime = 573803474, mIsMoving = false, mUpdated = true
+D/OplusViewDragTouchViewHelper(  322): dispatchTouchView action = 1
+D/ViewRootImplExtImpl(  322): the up motion event handled by client, just return
+I/DynamicFramerate [AnimationSpeedAware](  322): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 0, mVsyncTime = 573804017, mIsMoving = true, mUpdated = true
+I/DynamicFramerate [AnimationSpeedAware](  322): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 1, mVsyncTime = 573804069, mIsMoving = false, mUpdated = true
+D/OplusViewDragTouchViewHelper(  322): dispatchTouchView action = 1
+D/ViewRootImplExtImpl(  322): the up motion event handled by client, just return
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res = 0xb4000072d91e9880
+I/an_zone_flutter(  322): AssetManager2(0xb4000072d9471c28) locale list changing from [] to [en-IN]
+I/an_zone_flutter(  322): AssetManager2(0xb4000072d9472228) locale list changing from [] to [en-IN]
+I/an_zone_flutter(  322): AssetManager2(0xb4000072d9472828) locale list changing from [] to [en-IN]
+I/an_zone_flutter(  322): AssetManager2(0xb4000072d9471f28) locale list changing from [] to [en-IN]
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res = 0xb4000072cb859c00
+I/DynamicFramerate [AnimationSpeedAware](  322): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 0, mVsyncTime = 573805468, mIsMoving = true, mUpdated = true
+I/DynamicFramerate [AnimationSpeedAware](  322): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 1, mVsyncTime = 573805526, mIsMoving = false, mUpdated = true
+D/OplusViewDragTouchViewHelper(  322): dispatchTouchView action = 1
+D/ViewRootImplExtImpl(  322): the up motion event handled by client, just return
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000072d96a7b80
+D/WindowOnBackDispatcher(  322):  predictive settings is disabled for ApplicationInfo{7a96a59 com.example.dukaan_zone_flutter}
+W/WindowOnBackDispatcher(  322): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher(  322): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/WindowOnBackDispatcher(  322): onBackInvoked callback: android.view.ViewRootImpl$$ExternalSyntheticLambda13@fe118b, animationCallback is null
+I/DynamicFramerate [AnimationSpeedAware](  322): onDeliverInputEvent: key event
+D/WindowOnBackDispatcher(  322):  predictive settings is disabled for ApplicationInfo{7a96a59 com.example.dukaan_zone_flutter}
+I/DynamicFramerate [AnimationSpeedAware](  322): onDeliverInputEvent: key event
+D/WindowOnBackDispatcher(  322):  predictive settings is disabled for ApplicationInfo{7a96a59 com.example.dukaan_zone_flutter}
+D/Activity(  322): dispatchKeyEvent to com.example.dukaan_zone_flutter.MainActivity@f3f4ea0 will call onBackPressed
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res = 0xb4000072d91e9880
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res = 0xb4000072cb859c00
+I/DynamicFramerate [AnimationSpeedAware](  322): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 0, mVsyncTime = 573807209, mIsMoving = true, mUpdated = true
+I/DynamicFramerate [AnimationSpeedAware](  322): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 1, mVsyncTime = 573807307, mIsMoving = false, mUpdated = true
+D/OplusViewDragTouchViewHelper(  322): dispatchTouchView action = 1
+D/ViewRootImplExtImpl(  322): the up motion event handled by client, just return
+D/MediaPlayerNative(  322): do reset when preparing status,signal application thread
+V/MediaPlayer(  322): resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+V/MediaPlayer(  322): cleanDrmObj: mDrmObj=null mDrmSessionId=null
+V/MediaPlayer(  322): resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+V/MediaPlayer(  322): cleanDrmObj: mDrmObj=null mDrmSessionId=null
+D/MediaPlayer(  322): _release native called
+D/MediaPlayer(  322): _release native finished
+D/MediaHTTPConnection(  322): getSize mConnection == null
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/MediaPlayer(  322): MediaPlayer
+V/MediaPlayer(  322): resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+V/MediaPlayer(  322): cleanDrmObj: mDrmObj=null mDrmSessionId=null
+V/MediaHTTPService(  322): MediaHTTPService(android.media.MediaHTTPService@5d54e60): Cookies: null
+V/MediaHTTPService(  322): makeHTTPConnection: CookieHandler (java.net.CookieManager@dc7a72) exists.
+V/MediaHTTPService(  322): makeHTTPConnection(android.media.MediaHTTPService@5d54e60): cookieHandler: java.net.CookieManager@dc7a72 Cookies: null
+D/MediaHTTPConnectionExtImpl(  322): app com.example.dukaan_zone_flutter
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000072d96a7f40
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+I/DynamicFramerate [AnimationSpeedAware](  322): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 0, mVsyncTime = 573808577, mIsMoving = true, mUpdated = true
+I/DynamicFramerate [AnimationSpeedAware](  322): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 1, mVsyncTime = 573808640, mIsMoving = false, mUpdated = true
+D/OplusViewDragTouchViewHelper(  322): dispatchTouchView action = 1
+D/ViewRootImplExtImpl(  322): the up motion event handled by client, just return
+D/WindowOnBackDispatcher(  322):  predictive settings is disabled for ApplicationInfo{7a96a59 com.example.dukaan_zone_flutter}
+W/WindowOnBackDispatcher(  322): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher(  322): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+D/WindowOnBackDispatcher(  322): onBackInvoked callback: android.view.ViewRootImpl$$ExternalSyntheticLambda13@fe118b, animationCallback is null
+I/DynamicFramerate [AnimationSpeedAware](  322): onDeliverInputEvent: key event
+D/WindowOnBackDispatcher(  322):  predictive settings is disabled for ApplicationInfo{7a96a59 com.example.dukaan_zone_flutter}
+I/DynamicFramerate [AnimationSpeedAware](  322): onDeliverInputEvent: key event
+D/WindowOnBackDispatcher(  322):  predictive settings is disabled for ApplicationInfo{7a96a59 com.example.dukaan_zone_flutter}
+D/Activity(  322): dispatchKeyEvent to com.example.dukaan_zone_flutter.MainActivity@f3f4ea0 will call onBackPressed
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb40000738f3886c0
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000073809cf180
+I/flutter (  322): Failed to play native audio source: TimeoutException after 0:00:30.000000: Future not completed
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb40000743d367580
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000073fc53f200
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb40000743d367580
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaPlayerNative(  322): do reset when preparing status,signal application thread
+V/MediaPlayer(  322): resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+V/MediaPlayer(  322): cleanDrmObj: mDrmObj=null mDrmSessionId=null
+V/MediaPlayer(  322): resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+V/MediaPlayer(  322): cleanDrmObj: mDrmObj=null mDrmSessionId=null
+D/MediaPlayer(  322): _release native called
+D/MediaPlayer(  322): _release native finished
+D/MediaHTTPConnection(  322): getSize mConnection == null
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/MediaPlayer(  322): MediaPlayer
+V/MediaPlayer(  322): resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+V/MediaPlayer(  322): cleanDrmObj: mDrmObj=null mDrmSessionId=null
+V/MediaHTTPService(  322): MediaHTTPService(android.media.MediaHTTPService@9ac5b9f): Cookies: null
+V/MediaHTTPService(  322): makeHTTPConnection: CookieHandler (java.net.CookieManager@dc7a72) exists.
+V/MediaHTTPService(  322): makeHTTPConnection(android.media.MediaHTTPService@9ac5b9f): cookieHandler: java.net.CookieManager@dc7a72 Cookies: null
+D/MediaHTTPConnectionExtImpl(  322): app com.example.dukaan_zone_flutter
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb40000738f3886c0
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/VRI[MainActivity](  322): onFocusEvent false
+D/OplusGraphicsEvent(  322): FRTC type change to 1, rate: 20, info: false
+I/GuiUtils(  322): VRR [FRTC] s client update frtcType from 0 to 1
+I/GuiUtils(  322): VRR [FRTC] s client update frtcRate from 0 to 20
+I/GuiUtils(  322): VRR [FRTC] s client update frtcInfo from  to false
+D/OplusGraphicsEvent(  322): FRTC type change to 0, rate: 0, info: false
+I/GuiUtils(  322): VRR [FRTC] s client update frtcType from 1 to 0
+I/GuiUtils(  322): VRR [FRTC] s client update frtcRate from 20 to 0
+D/VRI[MainActivity](  322): dispatchAppVisibility visible:false mUpcomingWindowFocus:false
+D/VRI[MainActivity](  322): visibilityChanged oldVisibility=true newVisibility=false
+I/SurfaceView(  322): 37890906 surfaceDestroyed
+D/BufferQueueProducer(  322): [2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#1(BLAST Consumer)1](id:14200000001,api:1,p:322,c:322) disconnect: api 1
+D/BufferQueueProducer(  322): [2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#1(BLAST Consumer)1](id:14200000001,api:0,p:-1,c:322) disconnect: api -1
+I/DynamicFramerate [AnimationInfoManager](  322): onWindowVisibilityChanged: viewRoot-android.view.ViewRootImpl@cffc9c6 visibility changes to 8
+D/SurfaceView(  322): 98969449positionLost mSurfaceControl is null return;
+D/HWUI    (  322): RenderProxy::destroy: this=0xb4000073fc4a5d00, mContext=0xb4000073809a7900
+D/HWUI    (  322): SkiaVulkanPipeline::setSurface: this=0xb400007401282980, surface=NULL
+D/BufferQueueProducer(  322): [VRI[MainActivity]#0(BLAST Consumer)0](id:14200000000,api:1,p:322,c:322) disconnect: api 1
+D/BLASTBufferQueue(  322): [2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#1](f:0,a:2) destructor()
+D/BufferQueueConsumer(  322): [2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#1(BLAST Consumer)1](id:14200000001,api:0,p:-1,c:322) disconnect
+D/ViewRootImplExtImpl(  322): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=363, isAutolayoutSwdpModified=false, residentWS=false, scenario=0, bounds=Rect(0, 0 - 1272, 2800), isFirstDraw=false, relayoutAsync=false, flags=0, newFlags=1468018016, title=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity
+D/VRI[MainActivity](  322): relayoutWindow result, sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1272, 2800), mLastSurfaceSize:Point(1272, 2800), mWidth:1272, mHeight:2800, requestedWidth:1272, requestedHeight:2800, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:false, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1272,2800] display=[0,0][1272,2800] parentFrame=[0,0][0,0]}, relayoutResult:2, relayoutAsync:false, mSyncSeqId:0
+D/BLASTBufferQueue(  322): [VRI[MainActivity]#0](f:0,a:1) destructor()
+D/BufferQueueConsumer(  322): [VRI[MainActivity]#0(BLAST Consumer)0](id:14200000000,api:0,p:-1,c:322) disconnect
+D/VRI[MainActivity](  322): setWindowStopped stopped:true
+D/OplusScrollToTopManager(  322): com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity,This com.android.internal.policy.DecorView{67727fa I.E...... R.....ID 0,0-1272,2800 aid=0 alpha=1.0 viewInfo = }[MainActivity] change focus to false
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb40000738f38a280
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaPlayerNative(  322): do reset when preparing status,signal application thread
+V/MediaPlayer(  322): resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+V/MediaPlayer(  322): cleanDrmObj: mDrmObj=null mDrmSessionId=null
+V/MediaPlayer(  322): resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+V/MediaPlayer(  322): cleanDrmObj: mDrmObj=null mDrmSessionId=null
+D/MediaPlayer(  322): _release native called
+D/MediaPlayer(  322): _release native finished
+D/MediaHTTPConnection(  322): getSize mConnection == null
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/MediaPlayer(  322): MediaPlayer
+V/MediaPlayer(  322): resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
+V/MediaPlayer(  322): cleanDrmObj: mDrmObj=null mDrmSessionId=null
+V/MediaHTTPService(  322): MediaHTTPService(android.media.MediaHTTPService@7b87752): Cookies: null
+V/MediaHTTPService(  322): makeHTTPConnection: CookieHandler (java.net.CookieManager@dc7a72) exists.
+V/MediaHTTPService(  322): makeHTTPConnection(android.media.MediaHTTPService@7b87752): cookieHandler: java.net.CookieManager@dc7a72 Cookies: null
+D/MediaHTTPConnectionExtImpl(  322): app com.example.dukaan_zone_flutter
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb40000738f38a280
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+I/flutter (  322): Failed to play native audio source: TimeoutException after 0:00:30.000000: Future not completed
+D/VRI[MainActivity](  322): dispatchAppVisibility visible:true mUpcomingWindowFocus:false
+D/VRI[MainActivity](  322): setWindowStopped stopped:false
+D/ViewRootImpl(  322): Skipping stats log for color mode
+D/ActivityThread(  322): ComponentInfo{com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity} checkFinished=false 2
+D/ResourcesManagerExtImpl(  322): applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+I/DynamicFramerate [AnimationInfoManager](  322): onWindowVisibilityChanged: viewRoot-android.view.ViewRootImpl@cffc9c6 visibility changes to 0
+D/ViewRootImplExtImpl(  322): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=363, isAutolayoutSwdpModified=false, residentWS=false, scenario=0, bounds=Rect(0, 0 - 1272, 2800), isFirstDraw=false, relayoutAsync=false, flags=0, newFlags=1468018016, title=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity
+D/VRI[MainActivity](  322): relayoutWindow result, sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1272, 2800), mLastSurfaceSize:Point(1272, 2800), mWidth:1272, mHeight:2800, requestedWidth:1272, requestedHeight:2800, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:true, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1272,2800] display=[0,0][1272,2800] parentFrame=[0,0][0,0]}, relayoutResult:3, relayoutAsync:false, mSyncSeqId:0
+W/VRI[MainActivity](  322): updateBlastSurfaceIfNeeded, surfaceSize:Point(1272, 2800), lastSurfaceSize:Point(1272, 2800), format:-3, blastBufferQueue:null
+D/BufferQueueConsumer(  322): [](id:14200000002,api:0,p:-1,c:322) connect: controlledByApp=false
+D/BufferQueueConsumer(  322): [VRI[MainActivity]#2(BLAST Consumer)2](id:14200000002,api:0,p:-1,c:322) setMaxAcquiredBufferCount: 2
+D/BufferQueueProducer(  322): [VRI[MainActivity]#2(BLAST Consumer)2](id:14200000002,api:1,p:322,c:322) connect: api=1 producerControlledByApp=true
+D/SurfaceView(  322): 37890906, SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity], layerid: 250360 createBlastSurfaceControls
+D/BufferQueueConsumer(  322): [](id:14200000003,api:0,p:-1,c:322) connect: controlledByApp=false
+D/BufferQueueConsumer(  322): [2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLAST Consumer)3](id:14200000003,api:0,p:-1,c:322) setMaxAcquiredBufferCount: 2
+I/SurfaceView(  322): 37890906 visibleChanged -- surfaceCreated 
+D/BufferQueueProducer(  322): [2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLAST Consumer)3](id:14200000003,api:1,p:322,c:322) connect: api=1 producerControlledByApp=true
+D/Surface (  322): Surface::dispatchSetGameApi
+D/Surface (  322): dispatchSetGameApi pid[322] tid[9158] GameApi[1]
+D/Surface (  322): dispatchSetGameApi res:0
+D/vulkan  (  322): set game api vulkan successfully
+D/BLASTBufferQueue(  322): 2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 getBufferCacheFlag 0
+D/BLASTBufferQueue(  322): 2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 getMaxAcquireBufferCount 2
+D/BLASTBufferQueue(  322): 2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 getOrignalMaxAcquireBufferCount 3
+D/BLASTBufferQueue(  322): 2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 setMaxAcquireBufferCount 3
+D/BufferQueueConsumer(  322): [2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLAST Consumer)3](id:14200000003,api:1,p:322,c:322) setMaxAcquiredBufferCount: 3
+D/BLASTBufferQueue(  322): 2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 setBufferCacheFlag 1
+D/BLASTBufferQueue(  322): 2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 getBufferCacheFlag 1
+D/SurfaceView(  322): 37890906 handleSyncNoBuffer
+I/SurfaceControl(  322):  setExtendedRangeBrightness sc=Surface(name=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity)/@0x365f0fe,currentBufferRatio=1.0,desiredRatio=1.0
+D/SurfaceView(  322): 37890906 dispatchDraw mDrawFinished true isAboveParent false (mPrivateFlags & PFLAG_SKIP_DRAW) 128
+D/SurfaceView(  322): 37890906 clearSurfaceViewPort mCornerRadius 0.0
+D/BLASTBufferQueue(  322): [VRI[MainActivity]#2](f:0,a:1) acquireNextBufferLocked size=1272x2800 mFrameNumber=1 applyTransaction=true mTimestamp=573837547835783(auto) mPendingTransactions.size=0 graphicBufferId=1382979469345 transform=0
+D/VRI[MainActivity](  322): Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true syncBuffer=false
+D/ResourcesManagerExtImpl(  322): applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+D/BLASTBufferQueue(  322): [2422b5a SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3](f:0,a:1) acquireNextBufferLocked size=1272x2800 mFrameNumber=1 applyTransaction=true mTimestamp=573837563374013(auto) mPendingTransactions.size=0 graphicBufferId=1382979469339 transform=0
+D/VRI[MainActivity](  322): draw finished. seqId=0
+D/SurfaceView(  322): 37890906 finishedDrawing
+D/SurfaceView(  322): 37890906 performDrawFinished mAttachedToWindow true
+D/SurfaceView(  322): 37890906 dispatchDraw mDrawFinished true isAboveParent false (mPrivateFlags & PFLAG_SKIP_DRAW) 128
+D/SurfaceView(  322): 37890906 clearSurfaceViewPort mCornerRadius 0.0
+D/VRI[MainActivity](  322): onFocusEvent true
+D/InsetsController(  322): hide(ime(), fromIme=false)
+I/ImeTracker(  322): com.example.dukaan_zone_flutter:48d4729e: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000072cb694740
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/OplusScrollToTopManager(  322): com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity,This com.android.internal.policy.DecorView{67727fa V.E...... R....... 0,0-1272,2800 aid=0 alpha=1.0 viewInfo = }[MainActivity] change focus to true
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000072cb694ec0
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000072cb694740
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
+D/MediaHTTPConnectionExtImpl(  322): mNeedSetTimeout=false
+D/DNS_CACHE(  322): oplus_oplus_getaddrinfo_proxy lookup from netd: hostname:raw.githubusercontent.com, servname:(null) uid: 10429, result_code:408, res = 0x0, found = 0
+D/DNS_CACHE(  322): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000072cb694ec0
+W/System.err(  322): java.io.IOException
+W/System.err(  322):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
+W/System.err(  322):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
+W/System.err(  322):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
+W/System.err(  322):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
+W/System.err(  322):    at android.os.Binder.execTransactInternal(Binder.java:1448)
+W/System.err(  322):    at android.os.Binder.execTransact(Binder.java:1382)
