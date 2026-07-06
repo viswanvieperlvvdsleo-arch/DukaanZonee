@@ -403,11 +403,20 @@ async function handleChatRead(socket, payload) {
      SET delivery_status = 'seen',
          delivered_at = COALESCE(delivered_at, NOW()),
          read_at = COALESCE(read_at, NOW())
-     WHERE cm.room_id = $1
+      WHERE cm.room_id = $1
        AND cm.sender_user_id <> $2
        AND (
          cm.target_user_id = $2
-         OR cm.shop_id IN (SELECT id FROM shops WHERE seller_id = $2)
+         OR EXISTS (
+           SELECT 1 FROM shops s
+           WHERE s.seller_id = $2
+             AND (
+               cm.shop_id = s.id
+               OR cm.room_id = 'shop:' || s.id
+               OR cm.room_id LIKE 'shop:' || s.id || ':user:%'
+               OR LOWER(cm.room_id) = LOWER('shop:' || s.name)
+             )
+         )
          OR (cm.scope = 'b2b' AND $3 = 'seller'
            AND (
              cm.target_user_id = $2

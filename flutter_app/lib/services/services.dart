@@ -1386,6 +1386,7 @@ class LiveSocketService {
 
   void sendChatRead(String roomId) {
     send('chat.read', {'roomId': roomId});
+    refreshUnreadChatCount();
   }
 
   void sendCallStart({

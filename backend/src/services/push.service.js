@@ -155,8 +155,12 @@ function getMessaging() {
 
 function readServiceAccount() {
   if (config.fcmServiceAccountJson) {
-    const raw = config.fcmServiceAccountJson.trim();
-    if (raw.startsWith('{')) return JSON.parse(raw);
+    let raw = config.fcmServiceAccountJson.trim();
+    if (raw.startsWith('{')) {
+      // Fix for Render and Docker double-escaping newlines in JSON strings
+      raw = raw.replace(/\\n/g, '\n');
+      return JSON.parse(raw);
+    }
     if (raw.endsWith('.json') && fs.existsSync(raw)) {
       return JSON.parse(fs.readFileSync(raw, 'utf8'));
     }

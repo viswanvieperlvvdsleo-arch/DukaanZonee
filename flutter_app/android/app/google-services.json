@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "206610899214",
-    "project_id": "dukaanzone-38d82",
-    "storage_bucket": "dukaanzone-38d82.firebasestorage.app"
+    "project_number": "689188078230",
+    "project_id": "dukaanzone-2f9cd",
+    "storage_bucket": "dukaanzone-2f9cd.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:206610899214:android:eed8e9244d847e06e6f75f",
+        "mobilesdk_app_id": "1:689188078230:android:7088d0fbf28af7811df8b7",
         "android_client_info": {
           "package_name": "com.example.dukaan_zone_flutter"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDGArB2yBR0v3WhRpTo3gEABpPqnda5_Gw"
+          "current_key": "AIzaSyA0RsYWoVG21FccvfysQlDg5RH8hedtMeU"
         }
       ],
       "services": {
