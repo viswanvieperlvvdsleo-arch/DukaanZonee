@@ -240,7 +240,38 @@ paymentSessionsRouter.post('/complete', requireAuth, async (req, res, next) => {
         grossCents - commissionCents - gatewayFeeCents,
       );
       const paymentId = makeId('pay');
-      const gatewayReference = makeGatewayReference(gateway.id, paymentId);
+      let razorpayOrderId = null;
+      let status = 'completed';
+
+      if (input.provider === 'razorpay') {
+        status = 'pending';
+        const keyId = process.env.RAZORPAY_KEY_ID;
+        const keySecret = process.env.RAZORPAY_KEY_SECRET;
+        if (!keyId || !keySecret) {
+          throw new HttpError(500, 'Razorpay integration is not configured on this server');
+        }
+        const authHeader = 'Basic ' + Buffer.from(keyId + ':' + keySecret).toString('base64');
+        const response = await fetch('https://api.razorpay.com/v1/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': authHeader,
+          },
+          body: JSON.stringify({
+            amount: grossCents,
+            currency: 'INR',
+            receipt: paymentId,
+          }),
+        });
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new HttpError(500, `Razorpay order creation failed: ${errText}`);
+        }
+        const rzOrder = await response.json();
+        razorpayOrderId = rzOrder.id;
+      }
+
+      const gatewayReference = razorpayOrderId || makeGatewayReference(gateway.id, paymentId);
 
       const paymentResult = await client.query(
         `INSERT INTO payment_records (
@@ -248,7 +279,7 @@ paymentSessionsRouter.post('/complete', requireAuth, async (req, res, next) => {
           commission_cents, seller_net_cents, status, source, provider,
           gateway_reference
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, 'completed', $8, $9, $10)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING id, user_id, shop_id, gross_cents, gateway_fee_cents,
           commission_cents, seller_net_cents, status, source, provider,
           gateway_reference, created_at`,
@@ -260,6 +291,7 @@ paymentSessionsRouter.post('/complete', requireAuth, async (req, res, next) => {
           gatewayFeeCents,
           commissionCents,
           sellerNetCents,
+          status,
           input.source,
           gateway.id,
           gatewayReference,
@@ -284,24 +316,37 @@ paymentSessionsRouter.post('/complete', requireAuth, async (req, res, next) => {
             item.lineTotalCents,
           ],
         );
-        const updatedItem = await client.query(
-          `UPDATE shelf_items
-            SET stock_qty = stock_qty - $2,
-                updated_at = NOW()
-            WHERE id = $1
-            RETURNING id, name, stock_qty, alert_threshold, alert_enabled`,
-          [item.shelfItemId, item.quantity],
-        );
-        const stockItem = updatedItem.rows[0];
-        const threshold = Number(stockItem?.alert_threshold);
-        if (
-          stockItem?.alert_enabled === true &&
-          Number.isFinite(threshold) &&
-          threshold >= 0 &&
-          Number(stockItem.stock_qty) <= threshold
-        ) {
-          lowStockAlerts.push(stockItem);
+
+        if (status === 'completed') {
+          const updatedItem = await client.query(
+            `UPDATE shelf_items
+              SET stock_qty = stock_qty - $2,
+                  updated_at = NOW()
+              WHERE id = $1
+              RETURNING id, name, stock_qty, alert_threshold, alert_enabled`,
+            [item.shelfItemId, item.quantity],
+          );
+          const stockItem = updatedItem.rows[0];
+          const threshold = Number(stockItem?.alert_threshold);
+          if (
+            stockItem?.alert_enabled === true &&
+            Number.isFinite(threshold) &&
+            threshold >= 0 &&
+            Number(stockItem.stock_qty) <= threshold
+          ) {
+            lowStockAlerts.push(stockItem);
+          }
         }
+      }
+
+      if (status === 'pending') {
+        return {
+          shop,
+          payment: paymentResult.rows[0],
+          items: lineItems,
+          razorpayOrderId,
+          status: 'pending',
+        };
       }
 
       const sellerNotificationId = makeId('notif');
@@ -431,6 +476,22 @@ paymentSessionsRouter.post('/complete', requireAuth, async (req, res, next) => {
       };
     });
 
+    if (result.status === 'pending') {
+      res.status(201).json({
+        status: 'pending',
+        payment: {
+          id: result.payment.id,
+          status: 'pending',
+          grossCents: result.payment.gross_cents,
+          provider: 'razorpay',
+          gatewayReference: result.payment.gateway_reference,
+        },
+        razorpayOrderId: result.razorpayOrderId,
+        keyId: process.env.RAZORPAY_KEY_ID,
+      });
+      return;
+    }
+
     const payload = mapCompletedPayment(result.payment, result.shop, result.items, req.user);
     publishToUser(result.shop.seller_id, 'notification.created', result.sellerNotification);
     for (const notification of result.lowStockNotifications) {
@@ -456,6 +517,255 @@ paymentSessionsRouter.post('/complete', requireAuth, async (req, res, next) => {
     );
 
     res.status(201).json({ payment: payload });
+  } catch (error) {
+    next(error);
+  }
+});
+
+paymentSessionsRouter.post('/razorpay/verify', requireAuth, async (req, res, next) => {
+  try {
+    const schema = z.object({
+      paymentId: z.string().trim().min(1),
+      razorpayPaymentId: z.string().trim().min(1),
+      razorpayOrderId: z.string().trim().min(1),
+      razorpaySignature: z.string().trim().min(1),
+    });
+    const { paymentId, razorpayPaymentId, razorpayOrderId, razorpaySignature } = schema.parse(req.body);
+
+    const crypto = await import('crypto');
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    const body = razorpayOrderId + '|' + razorpayPaymentId;
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(body.toString())
+      .digest('hex');
+
+    if (expectedSignature !== razorpaySignature) {
+      throw new HttpError(400, 'Invalid payment signature. Verification failed.');
+    }
+
+    const result = await withTransaction(async (client) => {
+      const payResult = await client.query(
+        `SELECT id, user_id, shop_id, gross_cents, gateway_fee_cents, commission_cents, seller_net_cents, status, source
+         FROM payment_records
+         WHERE id = $1 AND status = 'pending'
+         FOR UPDATE`,
+        [paymentId]
+      );
+      const payment = payResult.rows[0];
+      if (!payment) {
+        throw new HttpError(404, 'Pending payment record not found');
+      }
+
+      await client.query(
+        `UPDATE payment_records
+         SET status = 'completed',
+             gateway_reference = $2,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [paymentId, razorpayPaymentId]
+      );
+
+      const shopResult = await client.query(
+        `SELECT s.id, s.seller_id, s.name, s.category, s.block, s.avatar_url,
+          seller.name AS seller_name
+         FROM shops s
+         INNER JOIN app_users seller ON seller.id = s.seller_id
+         WHERE s.id = $1`,
+        [payment.shop_id]
+      );
+      const shop = shopResult.rows[0];
+
+      const itemsResult = await client.query(
+        `SELECT shelf_item_id, item_name, unit_price_cents, quantity
+         FROM payment_record_items
+         WHERE payment_id = $1`,
+        [paymentId]
+      );
+      const items = itemsResult.rows;
+
+      const lowStockAlerts = [];
+      for (const item of items) {
+        const updatedItem = await client.query(
+          `UPDATE shelf_items
+            SET stock_qty = stock_qty - $2,
+                updated_at = NOW()
+            WHERE id = $1
+            RETURNING id, name, stock_qty, alert_threshold, alert_enabled`,
+          [item.shelf_item_id, item.quantity]
+        );
+        const stockItem = updatedItem.rows[0];
+        if (stockItem) {
+          const threshold = Number(stockItem.alert_threshold);
+          if (
+            stockItem.alert_enabled === true &&
+            Number.isFinite(threshold) &&
+            threshold >= 0 &&
+            Number(stockItem.stock_qty) <= threshold
+          ) {
+            lowStockAlerts.push(stockItem);
+          }
+        }
+      }
+
+      const sellerNotificationId = makeId('notif');
+      const sellerNotification = {
+        id: sellerNotificationId,
+        type: 'payment.completed',
+        title: 'New checkout payment',
+        body: `${req.user.name ?? 'Customer'} paid ${formatRupees(payment.gross_cents)} at ${shop.name}`,
+        shopId: shop.id,
+        shopName: shop.name,
+        actorName: req.user.name ?? 'Customer',
+      };
+      await client.query(
+        `INSERT INTO notifications (
+          id, recipient_user_id, actor_user_id, shop_id, type, title, body
+        )
+        VALUES ($1, $2, $3, $4, 'payment.completed', $5, $6)`,
+        [
+          sellerNotificationId,
+          shop.seller_id,
+          req.user.sub,
+          shop.id,
+          sellerNotification.title,
+          sellerNotification.body,
+        ]
+      );
+
+      const paymentChatMessage = {
+        id: paymentId,
+        roomId: `shop:${shop.id}:user:${req.user.sub}`,
+        scope: 'shop_payment',
+        senderUserId: req.user.sub,
+        targetUserId: shop.seller_id,
+        shopId: shop.id,
+        text: `Paid ${formatRupees(payment.gross_cents)} to ${shop.name}`,
+        type: 'payment',
+        createdAt: new Date(),
+        sender: {
+          id: req.user.sub,
+          name: req.user.name ?? 'Customer',
+          role: req.user.role,
+        },
+      };
+      await client.query(
+        `INSERT INTO chat_messages (
+          id, room_id, scope, sender_user_id, target_user_id, shop_id, text,
+          message_type, delivery_status, delivered_at
+        )
+        VALUES ($1, $2, 'shop_payment', $3, $4, $5, $6, 'payment',
+          'sent_online', NOW())
+        ON CONFLICT (id) DO NOTHING`,
+        [
+          paymentChatMessage.id,
+          paymentChatMessage.roomId,
+          paymentChatMessage.senderUserId,
+          paymentChatMessage.targetUserId,
+          paymentChatMessage.shopId,
+          paymentChatMessage.text,
+        ]
+      );
+
+      const lowStockNotifications = [];
+      for (const stockItem of lowStockAlerts) {
+        const notificationId = makeId('notif');
+        const threshold = Number(stockItem.alert_threshold);
+        const body = `${stockItem.name} is now at ${stockItem.stock_qty} left after checkout. Alert threshold: ${threshold}.`;
+        await client.query(
+          `INSERT INTO notifications (
+            id, recipient_user_id, actor_user_id, shop_id, type, title, body
+          )
+          VALUES ($1, $2, $3, $4, 'stock.low', 'Low stock alert', $5)`,
+          [notificationId, shop.seller_id, req.user.sub, shop.id, body]
+        );
+        lowStockNotifications.push({
+          id: notificationId,
+          type: 'stock.low',
+          title: 'Low stock alert',
+          body,
+          shopId: shop.id,
+          shopName: shop.name,
+          actorName: req.user.name ?? 'Customer',
+        });
+      }
+
+      const admins = await client.query(
+        `SELECT id
+         FROM app_users
+         WHERE role = 'admin' AND deleted_at IS NULL`,
+      );
+      const adminNotificationIds = [];
+      const adminNotification = {
+        type: 'payment.completed.admin',
+        title: 'Checkout recorded',
+        body: `${req.user.name ?? 'Customer'} paid ${formatRupees(payment.gross_cents)} to ${shop.name}. DukaanZone fee: ${formatRupees(payment.commission_cents)}.`,
+        shopId: shop.id,
+        shopName: shop.name,
+        actorName: req.user.name ?? 'Customer',
+      };
+      for (const admin of admins.rows) {
+        const notificationId = makeId('notif');
+        adminNotificationIds.push(admin.id);
+        await client.query(
+          `INSERT INTO notifications (
+            id, recipient_user_id, actor_user_id, shop_id, type, title, body
+          )
+          VALUES ($1, $2, $3, $4, 'payment.completed.admin', $5, $6)`,
+          [
+            notificationId,
+            admin.id,
+            req.user.sub,
+            shop.id,
+            adminNotification.title,
+            adminNotification.body,
+          ]
+        );
+      }
+
+      return {
+        shop,
+        payment: { ...payment, status: 'completed', gateway_reference: razorpayPaymentId },
+        items: items.map(item => ({
+          shelfItemId: item.shelf_item_id,
+          itemName: item.item_name,
+          unitPriceCents: item.unit_price_cents,
+          quantity: item.quantity,
+          lineTotalCents: item.unit_price_cents * item.quantity,
+        })),
+        sellerNotification,
+        lowStockNotifications,
+        adminNotification,
+        adminNotificationIds,
+        paymentChatMessage,
+      };
+    });
+
+    const payload = mapCompletedPayment(result.payment, result.shop, result.items, req.user);
+    publishToUser(result.shop.seller_id, 'notification.created', result.sellerNotification);
+    for (const notification of result.lowStockNotifications) {
+      publishToUser(result.shop.seller_id, 'notification.created', notification);
+    }
+    publishToUsers(result.adminNotificationIds, 'notification.created', result.adminNotification);
+    publishToUser(result.shop.seller_id, 'payment.completed', payload);
+    publishToUser(req.user.sub, 'payment.completed', payload);
+    publishToRole('admin', 'payment.completed', payload);
+    const stockPayload = {
+      shopId: result.shop.id,
+      sellerId: result.shop.seller_id,
+      itemIds: result.items.map((item) => item.shelfItemId),
+      reason: 'payment_completed',
+    };
+    publishToRole('user', 'stock.updated', stockPayload);
+    publishToRole('admin', 'stock.updated', stockPayload);
+    publishToUser(result.shop.seller_id, 'stock.updated', stockPayload);
+    publishToUsers(
+      [result.shop.seller_id, req.user.sub],
+      'chat.message',
+      result.paymentChatMessage,
+    );
+
+    res.json({ verified: true, payment: payload });
   } catch (error) {
     next(error);
   }

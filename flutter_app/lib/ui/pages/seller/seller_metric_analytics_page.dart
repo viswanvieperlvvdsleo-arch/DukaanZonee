@@ -398,6 +398,9 @@ class _SellerMetricAnalyticsPageState extends State<SellerMetricAnalyticsPage> {
       case _MetricWindow.yearly:
         cutoff = DateTime(now.year - 1, now.month, now.day);
         break;
+      case _MetricWindow.allTime:
+        cutoff = DateTime(2020, 1, 1);
+        break;
     }
     final filtered = payments.where((payment) {
       final timestamp = _paymentTime(payment);
@@ -490,15 +493,30 @@ class _SellerMetricAnalyticsPageState extends State<SellerMetricAnalyticsPage> {
       case _MetricWindow.yearly:
         for (var index = 11; index >= 0; index--) {
           final month = DateTime(now.year, now.month - index, 1);
-          final label = _monthLabel(month.month);
+          final label = "${_monthLabel(month.month)} '${month.year % 100}";
           labels.add(label);
           bucket[label] = 0;
         }
         for (final payment in payments) {
           final time = _paymentTime(payment);
           if (time == null) continue;
-          final label = _monthLabel(time.month);
+          final label = "${_monthLabel(time.month)} '${time.year % 100}";
           bucket[label] = (bucket[label] ?? 0) + _metricValue(payment);
+        }
+        break;
+      case _MetricWindow.allTime:
+        for (var index = 4; index >= 0; index--) {
+          final label = '${now.year - index}';
+          labels.add(label);
+          bucket[label] = 0;
+        }
+        for (final payment in payments) {
+          final time = _paymentTime(payment);
+          if (time == null) continue;
+          final label = '${time.year}';
+          if (bucket.containsKey(label)) {
+            bucket[label] = (bucket[label] ?? 0) + _metricValue(payment);
+          }
         }
         break;
     }
@@ -600,7 +618,8 @@ enum _MetricWindow {
   daily('Daily'),
   weekly('Weekly'),
   monthly('Monthly'),
-  yearly('Yearly');
+  yearly('Yearly'),
+  allTime('All Time');
 
   const _MetricWindow(this.label);
   final String label;

@@ -20,6 +20,7 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
   final _emailController = TextEditingController();
   final _mobileController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _addressController = TextEditingController();
   final _upiIdController = TextEditingController();
   final _paymentQrController = TextEditingController();
@@ -44,6 +45,7 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
     _emailController.dispose();
     _mobileController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _addressController.dispose();
     _upiIdController.dispose();
     _paymentQrController.dispose();
@@ -85,7 +87,6 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
       isSeller: true,
       shopName: _nameController.text,
       category: _selectedCategory,
-      block: _selectedBlock,
       address: _addressController.text,
       latitude: _selectedLatitude,
       longitude: _selectedLongitude,
@@ -122,6 +123,10 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
       return false;
     }
     if (_currentStep == SellerAuthStep.register) {
+      if (password != _confirmPasswordController.text) {
+        _showError('Passwords do not match.');
+        return false;
+      }
       if (_nameController.text.trim().length < 2) {
         _showError('Enter a shop name.');
         return false;
@@ -443,7 +448,6 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
   }
 
   String _selectedCategory = 'Grocery';
-  String _selectedBlock = 'Block A';
 
   Widget _buildRegister() {
     return Column(
@@ -526,23 +530,6 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
         ),
         const SizedBox(height: 20),
 
-        DropdownButtonFormField<String>(
-          value: _selectedBlock,
-          decoration: InputDecoration(
-            labelText: 'Primary Block',
-            prefixIcon: const Icon(Icons.location_city_outlined),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-          ),
-          items: [
-            'Block A',
-            'Block B',
-            'Cyber Plaza',
-            'Green Valley',
-          ].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-          onChanged: (v) => setState(() => _selectedBlock = v!),
-        ),
-        const SizedBox(height: 20),
-
         TextField(
           controller: _emailController,
           decoration: InputDecoration(
@@ -567,6 +554,18 @@ class _SellerAuthPageState extends State<SellerAuthPage> {
           obscureText: !_showPassword,
           decoration: _passwordDecoration(),
         ),
+        if (_currentStep == SellerAuthStep.register) ...[
+          const SizedBox(height: 20),
+          TextField(
+            controller: _confirmPasswordController,
+            obscureText: !_showPassword,
+            decoration: InputDecoration(
+              labelText: 'Confirm Password',
+              prefixIcon: const Icon(Icons.lock_outline),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
         TextField(
           controller: _addressController,

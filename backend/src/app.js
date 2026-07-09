@@ -13,6 +13,7 @@ import { pushRouter } from './routes/push.routes.js';
 import { sellerRouter } from './routes/seller.routes.js';
 import { settingsRouter } from './routes/settings.routes.js';
 import { supportRouter } from './routes/support.routes.js';
+import { userRouter } from './routes/user.routes.js';
 import { query } from './db/pool.js';
 import { HttpError } from './utils/httpError.js';
 
@@ -53,6 +54,7 @@ export function createApp() {
   app.use('/api/chats', chatsRouter);
   app.use('/api/discovery', discoveryRouter);
   app.use('/api/notifications', notificationsRouter);
+  app.use('/api/user', userRouter);
   app.use('/api/seller', sellerRouter);
   app.use('/api/push', pushRouter);
   app.use('/api/settings', settingsRouter);

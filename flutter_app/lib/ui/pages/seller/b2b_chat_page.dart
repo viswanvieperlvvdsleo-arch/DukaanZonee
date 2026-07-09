@@ -2165,126 +2165,15 @@ class _B2BChatRoomPageState extends State<B2BChatRoomPage> {
       kind: isVideo ? 'video' : 'voice',
       targetUserId: _targetSellerId,
     );
-    showGeneralDialog(
-      context: context,
-      barrierDismissible: false,
-      transitionDuration: const Duration(milliseconds: 300),
-      pageBuilder: (ctx, anim1, anim2) {
-        return Scaffold(
-          backgroundColor: Colors.black.withOpacity(0.92),
-          body: SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 60.0),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundColor:
-                            (widget.merchant['avatarColor'] as Color)
-                                .withOpacity(0.2),
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundColor:
-                              widget.merchant['avatarColor'] as Color,
-                          child: Text(
-                            widget.merchant['name'][0],
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        widget.merchant['name'],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        isVideo
-                            ? 'B2B Secure Video Call...'
-                            : 'B2B Secure Audio Call...',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                if (isVideo)
-                  Container(
-                    height: 200,
-                    margin: const EdgeInsets.symmetric(horizontal: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.white24),
-                    ),
-                    child: const Center(
-                      child: Text(
-                        '🎥 LIVE B2B FEED CONNECTING',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 60.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      // Mute Button
-                      CircleAvatar(
-                        radius: 26,
-                        backgroundColor: Colors.white.withOpacity(0.15),
-                        child: const Icon(Icons.mic_off, color: Colors.white),
-                      ),
-                      // End Call Button
-                      GestureDetector(
-                        onTap: () {
-                          liveSocketService.sendCallEnd(id: callId);
-                          Navigator.pop(ctx);
-                        },
-                        child: const CircleAvatar(
-                          radius: 34,
-                          backgroundColor: Colors.red,
-                          child: Icon(
-                            Icons.call_end,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        ),
-                      ),
-                      // Speaker Button
-                      CircleAvatar(
-                        radius: 26,
-                        backgroundColor: Colors.white.withOpacity(0.15),
-                        child: const Icon(Icons.volume_up, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    push(
+      context,
+      CallScreen(
+        channelName: _liveRoomId,
+        callId: callId,
+        isVideo: isVideo,
+        remoteName: widget.merchant['name']?.toString() ?? 'Partner',
+        remoteAvatarColor: widget.merchant['avatarColor'] as Color? ?? primary,
+      ),
     );
   }
 

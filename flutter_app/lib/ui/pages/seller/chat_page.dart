@@ -1827,22 +1827,24 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
 
   void _startHeaderCall(String kind) {
     final id = 'call-${DateTime.now().millisecondsSinceEpoch}';
+    final roomId = _lastLiveRoomId ??
+        widget.contact['roomId']?.toString() ??
+        'shop:seller';
     liveSocketService.sendCallStart(
       id: id,
-      roomId:
-          _lastLiveRoomId ??
-          widget.contact['roomId']?.toString() ??
-          'shop:seller',
+      roomId: roomId,
       scope: 'shop_payment',
       kind: kind,
       targetUserId: _lastLiveCustomerId ?? widget.contact['userId']?.toString(),
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${kind == 'video' ? 'Video' : 'Voice'} call request sent to ${widget.contact['name']}.',
-        ),
-        behavior: SnackBarBehavior.floating,
+    push(
+      context,
+      CallScreen(
+        channelName: roomId,
+        callId: id,
+        isVideo: kind == 'video',
+        remoteName: widget.contact['name']?.toString() ?? 'Customer',
+        remoteAvatarColor: widget.contact['avatarColor'] as Color? ?? primary,
       ),
     );
   }

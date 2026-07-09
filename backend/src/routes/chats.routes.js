@@ -79,6 +79,21 @@ chatsRouter.get('/rooms', async (req, res, next) => {
   }
 });
 
+chatsRouter.get('/rooms/:roomId/call-token', async (req, res, next) => {
+  try {
+    const roomId = req.params.roomId;
+    await assertRoomAccess(req.user, roomId);
+    res.json({
+      appId: process.env.AGORA_APP_ID || '',
+      channelName: roomId,
+      uid: req.user.sub,
+      token: ''
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 chatsRouter.get('/rooms/:roomId/messages', async (req, res, next) => {
   try {
     const input = roomSchema.parse({

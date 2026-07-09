@@ -645,6 +645,9 @@ class BackendAuthService implements AuthService {
   Future<void> _clearSavedSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_sessionTokenKey);
+    await prefs.remove(_savedAccountsKey);
+    globalSellerShopProfile.value = {};
+    settingsPreferencesService.clear();
   }
 
   Future<void> _saveAccount(Map<String, dynamic> user, String token) async {
@@ -900,6 +903,22 @@ class PaymentSessionService {
       'source': 'in_app',
       'provider': provider,
     });
+
+    if (data['status'] == 'pending') {
+      final user = globalCurrentUser.value;
+      final paymentData = Map<String, dynamic>.from(data['payment'] as Map);
+      return await razorpayService.startPayment(
+        keyId: data['keyId']?.toString() ?? '',
+        orderId: data['razorpayOrderId']?.toString() ?? '',
+        paymentId: paymentData['id']?.toString() ?? '',
+        amountCents: paymentData['grossCents'] as int? ?? 0,
+        shopName: shop.name ?? 'Local Shop',
+        userEmail: user?.email ?? 'customer@dukaanzone.local',
+        userPhone: user?.phone ?? '9999999999',
+        shop: shop,
+      );
+    }
+
     final payment = Map<String, dynamic>.from(data['payment'] as Map);
     return _mapCompletedPayment(payment, fallbackShop: shop);
   }
@@ -2322,6 +2341,10 @@ class SettingsPreferencesService {
     preferences.value = {...preferences.value, ...prefs};
     _applyAppPreferences(preferences.value);
     return preferences.value;
+  }
+
+  void clear() {
+    preferences.value = {};
   }
 
   Future<Map<String, dynamic>> savePatch(Map<String, dynamic> patch) async {

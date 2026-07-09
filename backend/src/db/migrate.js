@@ -16,6 +16,16 @@ const statements = [
   `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS restricted_until TIMESTAMPTZ`,
   `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS restriction_reason TEXT`,
   `ALTER TABLE app_users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`,
+  `CREATE TABLE IF NOT EXISTS user_addresses (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES app_users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    address TEXT NOT NULL,
+    latitude NUMERIC(10, 7),
+    longitude NUMERIC(10, 7),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
   `CREATE TABLE IF NOT EXISTS shops (
     id TEXT PRIMARY KEY,
     seller_id TEXT NOT NULL UNIQUE REFERENCES app_users(id) ON DELETE CASCADE,

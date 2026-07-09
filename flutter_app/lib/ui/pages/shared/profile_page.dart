@@ -318,6 +318,12 @@ class _WalletSection extends StatelessWidget {
           onTap: () => push(context, const PurchaseHistoryPage()),
         ),
         _SettingsTile(
+          icon: Icons.location_on_outlined,
+          title: 'Saved Addresses',
+          subtitle: 'Manage shipping and delivery addresses',
+          onTap: () => push(context, const UserAddressesPage()),
+        ),
+        _SettingsTile(
           icon: Icons.account_balance_outlined,
           title: 'Bank Accounts & Balance',
           subtitle: 'View linked bank details and check balance',
@@ -738,6 +744,12 @@ class _SupportSection extends StatelessWidget {
           title: 'Report an Issue',
           subtitle: 'Handshake problems or bad merchants',
           onTap: () => push(context, ReportIssuePage()),
+        ),
+        _SettingsTile(
+          icon: Icons.storage_rounded,
+          title: 'Storage & Media',
+          subtitle: 'Manage local audio, image, and document caches',
+          onTap: () => push(context, const MediaStorageSettingsPage()),
         ),
         _SettingsTile(
           icon: Icons.description_outlined,
