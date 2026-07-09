@@ -1,7 +1,6 @@
 export 'core/theme.dart';
 export 'core/constants.dart';
 export 'core/animations.dart';
-export 'services/audio_manager.dart';
 export 'services/device_location.dart';
 export 'services/address_service.dart';
 export 'services/razorpay_service.dart';

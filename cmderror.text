@@ -1,240 +1,349 @@
-.com/akx/Notifications/master/wav/Chime.wav, mimeType: null), 
-I/flutter (  705):      PlatformException(AndroidAudioError, Failedto set source. For troubleshooting, see: https://github.com/bluefireteam/audioplayers/blob/main/troubleshooting.md, MEDIA_ERROR_UNKNOWN{what:1}, MEDIA_ERROR_SYSTEM, null)
-I/DynamicFramerate [AnimationSpeedAware](  705): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 0, mVsyncTime = 576326259, mIsMoving = true, mUpdated = true
-I/DynamicFramerate [AnimationSpeedAware](  705): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 1, mVsyncTime = 576326278, mIsMoving = false, mUpdated =true
-D/OplusViewDragTouchViewHelper(  705): dispatchTouchView action = 1
-D/ViewRootImplExtImpl(  705): theup motion event handled by client, just return
-D/VRI[MainActivity](  705): onFocusEvent false
-D/OplusGraphicsEvent(  705): FRTCtype change to 1, rate: 20, info:false
-I/GuiUtils(  705): VRR [FRTC] s client update frtcType from 0 to 1
-I/GuiUtils(  705): VRR [FRTC] s client update frtcRate from 0 to 20
-I/GuiUtils(  705): VRR [FRTC] s client update frtcInfo from  to false
-D/OplusGraphicsEvent(  705): FRTCtype change to 0, rate: 0, info: false
-I/GuiUtils(  705): VRR [FRTC] s client update frtcType from 1 to 0
-I/GuiUtils(  705): VRR [FRTC] s client update frtcRate from 20 to 0
-D/VRI[MainActivity](  705): dispatchAppVisibility visible:false mUpcomingWindowFocus:false
-D/VRI[MainActivity](  705): visibilityChanged oldVisibility=true newVisibility=false
-I/SurfaceView(  705): 16650635 surfaceDestroyed
-D/BufferQueueProducer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#1(BLASTConsumer)1](id:2c100000001,api:1,p:705,c:705) disconnect: api 1
-D/BufferQueueProducer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#1(BLASTConsumer)1](id:2c100000001,api:0,p:-1,c:705) disconnect: api -1
-D/BLASTBufferQueue(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#1](f:0,a:2) destructor()
-D/BufferQueueConsumer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#1(BLASTConsumer)1](id:2c100000001,api:0,p:-1,c:705) disconnect
-I/DynamicFramerate [AnimationInfoManager](  705): onWindowVisibilityChanged: viewRoot-android.view.ViewRootImpl@d876d87 visibility changes to 8
-D/SurfaceView(  705): 207372029positionLost mSurfaceControl is nullreturn;
-D/HWUI    (  705): RenderProxy::destroy: this=0xb4000072e5a67b00, mContext=0xb4000072e5b377c0
-D/HWUI    (  705): SkiaVulkanPipeline::setSurface: this=0xb4000073f56b9080, surface=NULL
-D/BufferQueueProducer(  705): [VRI[MainActivity]#0(BLAST Consumer)0](id:2c100000000,api:1,p:705,c:705) disconnect: api 1
-D/ViewRootImplExtImpl(  705): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=363, isAutolayoutSwdpModified=false, residentWS=false, scenario=0, bounds=Rect(0,0 - 1272, 2800), isFirstDraw=false, relayoutAsync=false, flags=0, newFlags=1468018016, title=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity
-D/VRI[MainActivity](  705): relayoutWindow result, sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1272, 2800), mLastSurfaceSize:Point(1272, 2800), mWidth:1272, mHeight:2800, requestedWidth:1272, requestedHeight:2800, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:false, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1272,2800] display=[0,0][1272,2800] parentFrame=[0,0][0,0]}, relayoutResult:2, relayoutAsync:false, mSyncSeqId:0
-D/BLASTBufferQueue(  705): [VRI[MainActivity]#0](f:0,a:1) destructor()
-D/BufferQueueConsumer(  705): [VRI[MainActivity]#0(BLAST Consumer)0](id:2c100000000,api:0,p:-1,c:705)disconnect
-D/VRI[MainActivity](  705): setWindowStopped stopped:true
-D/MediaPlayer(  705): finalize() native_finalize called
-D/MediaPlayer(  705): finalize() native_finalize finished
-D/OplusScrollToTopManager(  705):com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity,This com.android.internal.policy.DecorView{44661ab I.E...... R.....ID 0,0-1272,2800 aid=0 alpha=1.0 viewInfo = }[MainActivity]change focus to false
-D/VRI[MainActivity](  705): dispatchAppVisibility visible:true mUpcomingWindowFocus:false
-D/VRI[MainActivity](  705): setWindowStopped stopped:false
-D/ViewRootImpl(  705): Skipping stats log for color mode
-D/ActivityThread(  705): ComponentInfo{com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity} checkFinished=false 2
-D/ResourcesManagerExtImpl(  705):applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
-I/DynamicFramerate [AnimationInfoManager](  705): onWindowVisibilityChanged: viewRoot-android.view.ViewRootImpl@d876d87 visibility changes to 0
-D/ViewRootImplExtImpl(  705): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=363, isAutolayoutSwdpModified=false, residentWS=false, scenario=0, bounds=Rect(0,0 - 1272, 2800), isFirstDraw=false, relayoutAsync=false, flags=0, newFlags=1468018016, title=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity
-D/VRI[MainActivity](  705): relayoutWindow result, sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1272, 2800), mLastSurfaceSize:Point(1272, 2800), mWidth:1272, mHeight:2800, requestedWidth:1272, requestedHeight:2800, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:true, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1272,2800] display=[0,0][1272,2800] parentFrame=[0,0][0,0]}, relayoutResult:3, relayoutAsync:false, mSyncSeqId:0
-W/VRI[MainActivity](  705): updateBlastSurfaceIfNeeded, surfaceSize:Point(1272, 2800), lastSurfaceSize:Point(1272, 2800), format:-3, blastBufferQueue:null
-D/BufferQueueConsumer(  705): [](id:2c100000002,api:0,p:-1,c:705) connect: controlledByApp=false
-D/BufferQueueConsumer(  705): [VRI[MainActivity]#2(BLAST Consumer)2](id:2c100000002,api:0,p:-1,c:705)setMaxAcquiredBufferCount: 2
-D/BufferQueueProducer(  705): [VRI[MainActivity]#2(BLAST Consumer)2](id:2c100000002,api:1,p:705,c:705) connect: api=1 producerControlledByApp=true
-D/SurfaceView(  705): 16650635, SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity], layerid: 251896 createBlastSurfaceControls
-D/BufferQueueConsumer(  705): [](id:2c100000003,api:0,p:-1,c:705) connect: controlledByApp=false
-D/BufferQueueConsumer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLASTConsumer)3](id:2c100000003,api:0,p:-1,c:705) setMaxAcquiredBufferCount: 2
-I/SurfaceView(  705): 16650635 visibleChanged -- surfaceCreated 
-D/BufferQueueProducer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLASTConsumer)3](id:2c100000003,api:1,p:705,c:705) connect: api=1 producerControlledByApp=true
-D/Surface (  705): Surface::dispatchSetGameApi
-D/Surface (  705): dispatchSetGameApi pid[705] tid[9094] GameApi[1]
-D/Surface (  705): dispatchSetGameApi res:0
-D/vulkan  (  705): set game api vulkan successfully
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 getBufferCacheFlag 0
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 getMaxAcquireBufferCount 2
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 getOrignalMaxAcquireBufferCount 3
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 setMaxAcquireBufferCount 3
-D/BufferQueueConsumer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLASTConsumer)3](id:2c100000003,api:1,p:705,c:705) setMaxAcquiredBufferCount: 3
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 setBufferCacheFlag 1
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3 getBufferCacheFlag 1
-D/SurfaceView(  705): 16650635 handleSyncNoBuffer
-I/SurfaceControl(  705):  setExtendedRangeBrightness sc=Surface(name=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity)/@0x27a737b,currentBufferRatio=1.0,desiredRatio=1.0
-D/SurfaceView(  705): 16650635 dispatchDraw mDrawFinished true isAboveParent false (mPrivateFlags & PFLAG_SKIP_DRAW) 128
-D/SurfaceView(  705): 16650635 clearSurfaceViewPort mCornerRadius 0.0
-D/BLASTBufferQueue(  705): [VRI[MainActivity]#2](f:0,a:1) acquireNextBufferLocked size=1272x2800 mFrameNumber=1 applyTransaction=true mTimestamp=576340768589776(auto) mPendingTransactions.size=0 graphicBufferId=3027951943713 transform=0
-D/VRI[MainActivity](  705): Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true syncBuffer=false
-D/ResourcesManagerExtImpl(  705):applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
-D/BLASTBufferQueue(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3](f:0,a:1) acquireNextBufferLocked size=1272x2800 mFrameNumber=1 applyTransaction=true mTimestamp=576340790938578(auto) mPendingTransactions.size=0 graphicBufferId=3027951943707 transform=0
-D/VRI[MainActivity](  705): draw finished. seqId=0
-D/SurfaceView(  705): 16650635 finishedDrawing
-D/SurfaceView(  705): 16650635 performDrawFinished mAttachedToWindow true
-D/SurfaceView(  705): 16650635 dispatchDraw mDrawFinished true isAboveParent false (mPrivateFlags & PFLAG_SKIP_DRAW) 128
-D/SurfaceView(  705): 16650635 clearSurfaceViewPort mCornerRadius 0.0
-D/VRI[MainActivity](  705): onFocusEvent true
-D/InsetsController(  705): hide(ime(), fromIme=false)
-I/ImeTracker(  705): com.example.dukaan_zone_flutter:c9bf32c4: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
-D/OplusScrollToTopManager(  705):com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity,This com.android.internal.policy.DecorView{44661ab V.E...... R....... 0,0-1272,2800 aid=0 alpha=1.0 viewInfo = }[MainActivity]change focus to true
-I/DynamicFramerate [AnimationSpeedAware](  705): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 0, mVsyncTime = 576351398, mIsMoving = true, mUpdated = true
-I/DynamicFramerate [AnimationSpeedAware](  705): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 1, mVsyncTime = 576351456, mIsMoving = false, mUpdated =true
-D/OplusViewDragTouchViewHelper(  705): dispatchTouchView action = 1
-D/ViewRootImplExtImpl(  705): theup motion event handled by client, just return
-D/DNS_CACHE(  705): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10432, result_code:408, res = 0x0, found = 0
-D/DNS_CACHE(  705): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10432, result_code:408, res = 0x0, found = 0
-D/DNS_CACHE(  705): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10432, result_code:408, res = 0x0, found = 0
-I/an_zone_flutter(  705): AssetManager2(0xb4000072aab6d028) locale list changing from [] to [en-IN]
-I/an_zone_flutter(  705): AssetManager2(0xb4000072aab6d328) locale list changing from [] to [en-IN]
-I/an_zone_flutter(  705): AssetManager2(0xb4000072aab83428) locale list changing from [] to [en-IN]
-I/an_zone_flutter(  705): AssetManager2(0xb4000072aab83728) locale list changing from [] to [en-IN]
-D/DNS_CACHE(  705): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10432, result_code:408, res = 0x0, found = 0
-D/DNS_CACHE(  705): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10432, result_code:408, res = 0x0, found = 0
-D/DNS_CACHE(  705): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:dukaanzone-hs7g.onrender.com, servname:(null) uid: 10432, result_code:408, res = 0x0, found = 0
-D/DNS_CACHE(  705): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res =0xb40000740123dd80
-D/DNS_CACHE(  705): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res =0xb4000072fb32a900
-D/DNS_CACHE(  705): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res =0xb4000073e4d1e3c0
-D/DNS_CACHE(  705): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res =0xb4000072fb32bc80
-D/DNS_CACHE(  705): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res =0xb4000072db998bc0
-D/DNS_CACHE(  705): oplus_send_dns_response send hostname: dukaanzone-hs7g.onrender.com, servname: (null) response into netd: 0, *res =0xb4000072cce75800
-I/DynamicFramerate [AnimationSpeedAware](  705): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 0, mVsyncTime = 576351855, mIsMoving = true, mUpdated = true
-I/DynamicFramerate [AnimationSpeedAware](  705): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 1, mVsyncTime = 576351879, mIsMoving = false, mUpdated =true
-D/OplusViewDragTouchViewHelper(  705): dispatchTouchView action = 1
-D/ViewRootImplExtImpl(  705): theup motion event handled by client, just return
-D/VRI[MainActivity](  705): onFocusEvent false
-D/OplusGraphicsEvent(  705): FRTCtype change to 1, rate: 20, info:false
-I/GuiUtils(  705): VRR [FRTC] s client update frtcType from 0 to 1
-I/GuiUtils(  705): VRR [FRTC] s client update frtcRate from 0 to 20
-D/OplusGraphicsEvent(  705): FRTCtype change to 0, rate: 0, info: false
-I/GuiUtils(  705): VRR [FRTC] s client update frtcType from 1 to 0
-I/GuiUtils(  705): VRR [FRTC] s client update frtcRate from 20 to 0
-D/VRI[MainActivity](  705): dispatchAppVisibility visible:false mUpcomingWindowFocus:false
-D/VRI[MainActivity](  705): visibilityChanged oldVisibility=true newVisibility=false
-I/SurfaceView(  705): 16650635 surfaceDestroyed
-D/BufferQueueProducer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLASTConsumer)3](id:2c100000003,api:1,p:705,c:705) disconnect: api 1
-D/BufferQueueProducer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLASTConsumer)3](id:2c100000003,api:0,p:-1,c:705) disconnect: api -1
-D/BLASTBufferQueue(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3](f:0,a:2) destructor()
-D/BufferQueueConsumer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#3(BLASTConsumer)3](id:2c100000003,api:0,p:-1,c:705) disconnect
-I/DynamicFramerate [AnimationInfoManager](  705): onWindowVisibilityChanged: viewRoot-android.view.ViewRootImpl@d876d87 visibility changes to 8
-D/SurfaceView(  705): 146954913positionLost mSurfaceControl is nullreturn;
-D/HWUI    (  705): RenderProxy::destroy: this=0xb4000072e5a67b00, mContext=0xb4000072e5b377c0
-D/HWUI    (  705): SkiaVulkanPipeline::setSurface: this=0xb4000073f56b9080, surface=NULL
-D/BufferQueueProducer(  705): [VRI[MainActivity]#2(BLAST Consumer)2](id:2c100000002,api:1,p:705,c:705) disconnect: api 1
-D/ViewRootImplExtImpl(  705): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=363, isAutolayoutSwdpModified=false, residentWS=false, scenario=0, bounds=Rect(0,0 - 1272, 2800), isFirstDraw=false, relayoutAsync=false, flags=0, newFlags=1468018016, title=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity
-D/VRI[MainActivity](  705): relayoutWindow result, sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1272, 2800), mLastSurfaceSize:Point(1272, 2800), mWidth:1272, mHeight:2800, requestedWidth:1272, requestedHeight:2800, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:false, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1272,2800] display=[0,0][1272,2800] parentFrame=[0,0][0,0]}, relayoutResult:2, relayoutAsync:false, mSyncSeqId:0
-D/BLASTBufferQueue(  705): [VRI[MainActivity]#2](f:0,a:1) destructor()
-D/BufferQueueConsumer(  705): [VRI[MainActivity]#2(BLAST Consumer)2](id:2c100000002,api:0,p:-1,c:705)disconnect
-D/VRI[MainActivity](  705): setWindowStopped stopped:true
-D/OplusScrollToTopManager(  705):com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity,This com.android.internal.policy.DecorView{44661ab I.E...... R.....ID 0,0-1272,2800 aid=0 alpha=1.0 viewInfo = }[MainActivity]change focus to false
-D/MediaPlayer(  705): MediaPlayer
-V/MediaPlayer(  705): resetDrmState:  mDrmInfo=null mDrmProvisioningThread=null mPrepareDrmInProgress=false mActiveDrmScheme=false
-V/MediaPlayer(  705): cleanDrmObj: mDrmObj=null mDrmSessionId=null
-V/MediaHTTPService(  705): MediaHTTPService(android.media.MediaHTTPService@1fa1c87): Cookies: null
-V/MediaHTTPService(  705): makeHTTPConnection: CookieHandler (java.net.CookieManager@15b0ec3) exists.
-V/MediaHTTPService(  705): makeHTTPConnection(android.media.MediaHTTPService@1fa1c87): cookieHandler:java.net.CookieManager@15b0ec3 Cookies: null
-D/MediaHTTPConnectionExtImpl(  705): app com.example.dukaan_zone_flutter
-D/MediaHTTPConnectionExtImpl(  705): mNeedSetTimeout=false
-D/DNS_CACHE(  705): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:raw.githubusercontent.com, servname:(null) uid: 10432, result_code:408, res = 0x0, found = 0
-D/DNS_CACHE(  705): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000072fb32b680
-D/MediaHTTPConnectionExtImpl(  705): mNeedSetTimeout=false
-W/System.err(  705): java.io.IOException
-W/System.err(  705):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
-W/System.err(  705):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
-W/System.err(  705):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
-W/System.err(  705):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
-W/System.err(  705):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
-W/System.err(  705):    at android.os.Binder.execTransactInternal(Binder.java:1448)
-W/System.err(  705):    at android.os.Binder.execTransact(Binder.java:1382)
-D/VRI[MainActivity](  705): dispatchAppVisibility visible:true mUpcomingWindowFocus:false
-D/VRI[MainActivity](  705): setWindowStopped stopped:false
-D/ViewRootImpl(  705): Skipping stats log for color mode
-D/ActivityThread(  705): ComponentInfo{com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity} checkFinished=false 2
-D/ResourcesManagerExtImpl(  705):applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
-I/DynamicFramerate [AnimationInfoManager](  705): onWindowVisibilityChanged: viewRoot-android.view.ViewRootImpl@d876d87 visibility changes to 0
-D/ViewRootImplExtImpl(  705): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=363, isAutolayoutSwdpModified=false, residentWS=false, scenario=0, bounds=Rect(0,0 - 1272, 2800), isFirstDraw=false, relayoutAsync=false, flags=0, newFlags=1468018016, title=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity
-D/VRI[MainActivity](  705): relayoutWindow result, sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1272, 2800), mLastSurfaceSize:Point(1272, 2800), mWidth:1272, mHeight:2800, requestedWidth:1272, requestedHeight:2800, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:true, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1272,2800] display=[0,0][1272,2800] parentFrame=[0,0][0,0]}, relayoutResult:3, relayoutAsync:false, mSyncSeqId:0
-W/VRI[MainActivity](  705): updateBlastSurfaceIfNeeded, surfaceSize:Point(1272, 2800), lastSurfaceSize:Point(1272, 2800), format:-3, blastBufferQueue:null
-D/BufferQueueConsumer(  705): [](id:2c100000004,api:0,p:-1,c:705) connect: controlledByApp=false
-D/BufferQueueConsumer(  705): [VRI[MainActivity]#4(BLAST Consumer)4](id:2c100000004,api:0,p:-1,c:705)setMaxAcquiredBufferCount: 2
-D/BufferQueueProducer(  705): [VRI[MainActivity]#4(BLAST Consumer)4](id:2c100000004,api:1,p:705,c:705) connect: api=1 producerControlledByApp=true
-D/SurfaceView(  705): 16650635, SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity], layerid: 251917 createBlastSurfaceControls
-D/BufferQueueConsumer(  705): [](id:2c100000005,api:0,p:-1,c:705) connect: controlledByApp=false
-D/BufferQueueConsumer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:2c100000005,api:0,p:-1,c:705) setMaxAcquiredBufferCount: 2
-I/SurfaceView(  705): 16650635 visibleChanged -- surfaceCreated 
-D/BufferQueueProducer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:2c100000005,api:1,p:705,c:705) connect: api=1 producerControlledByApp=true
-D/Surface (  705): Surface::dispatchSetGameApi
-D/Surface (  705): dispatchSetGameApi pid[705] tid[9094] GameApi[1]
-D/Surface (  705): dispatchSetGameApi res:0
-D/vulkan  (  705): set game api vulkan successfully
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 getBufferCacheFlag 0
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 getMaxAcquireBufferCount 2
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 getOrignalMaxAcquireBufferCount 3
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 setMaxAcquireBufferCount 3
-D/BufferQueueConsumer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:2c100000005,api:1,p:705,c:705) setMaxAcquiredBufferCount: 3
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 setBufferCacheFlag 1
-D/BLASTBufferQueue(  705): fe118bSurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5 getBufferCacheFlag 1
-D/SurfaceView(  705): 16650635 handleSyncNoBuffer
-I/SurfaceControl(  705):  setExtendedRangeBrightness sc=Surface(name=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity)/@0x27a737b,currentBufferRatio=1.0,desiredRatio=1.0
-D/SurfaceView(  705): 16650635 dispatchDraw mDrawFinished true isAboveParent false (mPrivateFlags & PFLAG_SKIP_DRAW) 128
-D/SurfaceView(  705): 16650635 clearSurfaceViewPort mCornerRadius 0.0
-D/BLASTBufferQueue(  705): [VRI[MainActivity]#4](f:0,a:1) acquireNextBufferLocked size=1272x2800 mFrameNumber=1 applyTransaction=true mTimestamp=576360490134092(auto) mPendingTransactions.size=0 graphicBufferId=3027951943731 transform=0
-D/VRI[MainActivity](  705): Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true syncBuffer=false
-D/ResourcesManagerExtImpl(  705):applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
-D/BLASTBufferQueue(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5](f:0,a:1) acquireNextBufferLocked size=1272x2800 mFrameNumber=1 applyTransaction=true mTimestamp=576360507220290(auto) mPendingTransactions.size=0 graphicBufferId=3027951943725 transform=0
-D/VRI[MainActivity](  705): draw finished. seqId=0
-D/SurfaceView(  705): 16650635 finishedDrawing
-D/SurfaceView(  705): 16650635 performDrawFinished mAttachedToWindow true
-D/SurfaceView(  705): 16650635 dispatchDraw mDrawFinished true isAboveParent false (mPrivateFlags & PFLAG_SKIP_DRAW) 128
-D/SurfaceView(  705): 16650635 clearSurfaceViewPort mCornerRadius 0.0
-D/VRI[MainActivity](  705): onFocusEvent true
-D/InsetsController(  705): hide(ime(), fromIme=false)
-I/ImeTracker(  705): com.example.dukaan_zone_flutter:97618e3a: onCancelled at PHASE_CLIENT_ALREADY_HIDDEN
-D/MediaHTTPConnectionExtImpl(  705): mNeedSetTimeout=false
-D/DNS_CACHE(  705): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:raw.githubusercontent.com, servname:(null) uid: 10432, result_code:408, res = 0x0, found = 0
-D/DNS_CACHE(  705): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000072fb32ab40
-W/System.err(  705): java.io.IOException
-W/System.err(  705):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
-W/System.err(  705):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
-W/System.err(  705):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
-W/System.err(  705):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
-W/System.err(  705):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
-W/System.err(  705):    at android.os.Binder.execTransactInternal(Binder.java:1448)
-W/System.err(  705):    at android.os.Binder.execTransact(Binder.java:1382)
-D/OplusScrollToTopManager(  705):com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity,This com.android.internal.policy.DecorView{44661ab V.E...... R....... 0,0-1272,2800 aid=0 alpha=1.0 viewInfo = }[MainActivity]change focus to true
-I/DynamicFramerate [AnimationSpeedAware](  705): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 0, mVsyncTime = 576362082, mIsMoving = true, mUpdated = true
-I/DynamicFramerate [AnimationSpeedAware](  705): onEventHandled: info: InputEventInfo: mX = 0, mY = 0, mAction = 1, mVsyncTime = 576362196, mIsMoving = false, mUpdated =true
-D/OplusViewDragTouchViewHelper(  705): dispatchTouchView action = 1
-D/ViewRootImplExtImpl(  705): theup motion event handled by client, just return
-D/VRI[MainActivity](  705): onFocusEvent false
-D/VRI[MainActivity](  705): dispatchAppVisibility visible:false mUpcomingWindowFocus:false
-D/VRI[MainActivity](  705): visibilityChanged oldVisibility=true newVisibility=false
-I/SurfaceView(  705): 16650635 surfaceDestroyed
-D/BufferQueueProducer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:2c100000005,api:1,p:705,c:705) disconnect: api 1
-D/BufferQueueProducer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:2c100000005,api:0,p:-1,c:705) disconnect: api -1
-D/BLASTBufferQueue(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5](f:0,a:3) destructor()
-D/BufferQueueConsumer(  705): [fe118b SurfaceView[com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity]#5(BLASTConsumer)5](id:2c100000005,api:0,p:-1,c:705) disconnect
-I/DynamicFramerate [AnimationInfoManager](  705): onWindowVisibilityChanged: viewRoot-android.view.ViewRootImpl@d876d87 visibility changes to 8
-D/SurfaceView(  705): 37029466positionLost mSurfaceControl is null return;
-D/HWUI    (  705): RenderProxy::destroy: this=0xb4000072e5a67b00, mContext=0xb4000072e5b377c0
-D/HWUI    (  705): SkiaVulkanPipeline::setSurface: this=0xb4000073f56b9080, surface=NULL
-D/BufferQueueProducer(  705): [VRI[MainActivity]#4(BLAST Consumer)4](id:2c100000004,api:1,p:705,c:705) disconnect: api 1
-D/ViewRootImplExtImpl(  705): wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=363, isAutolayoutSwdpModified=false, residentWS=false, scenario=0, bounds=Rect(0,0 - 1272, 2800), isFirstDraw=false, relayoutAsync=false, flags=0, newFlags=1468018016, title=com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity
-D/VRI[MainActivity](  705): relayoutWindow result, sizeChanged:false, surfaceControlChanged:true, transformHintChanged:false, mSurfaceSize:Point(1272, 2800), mLastSurfaceSize:Point(1272, 2800), mWidth:1272, mHeight:2800, requestedWidth:1272, requestedHeight:2800, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:false, attr.flag:-2122252032, tmpFrames:ClientWindowFrames{frame=[0,0][1272,2800] display=[0,0][1272,2800] parentFrame=[0,0][0,0]}, relayoutResult:2, relayoutAsync:false, mSyncSeqId:0
-D/BLASTBufferQueue(  705): [VRI[MainActivity]#4](f:0,a:1) destructor()
-D/BufferQueueConsumer(  705): [VRI[MainActivity]#4(BLAST Consumer)4](id:2c100000004,api:0,p:-1,c:705)disconnect
-D/VRI[MainActivity](  705): setWindowStopped stopped:true
-D/MediaHTTPConnectionExtImpl(  705): mNeedSetTimeout=false
-D/DNS_CACHE(  705): oplus_oplus_getaddrinfo_proxy lookup from netd:hostname:raw.githubusercontent.com, servname:(null) uid: 10432, result_code:408, res = 0x0, found = 0
-D/DNS_CACHE(  705): oplus_send_dns_response send hostname: raw.githubusercontent.com, servname: (null) response into netd: 0, *res = 0xb4000072fb32bc80
-D/OplusScrollToTopManager(  705):com.example.dukaan_zone_flutter/com.example.dukaan_zone_flutter.MainActivity,This com.android.internal.policy.DecorView{44661ab I.E...... R.....ID 0,0-1272,2800 aid=0 alpha=1.0 viewInfo = }[MainActivity]change focus to false
-W/System.err(  705): java.io.IOException
-W/System.err(  705):    at android.media.MediaHTTPConnection.seekTo(MediaHTTPConnection.java:392)
-W/System.err(  705):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:430)
-W/System.err(  705):    at android.media.MediaHTTPConnection.native_readAt(Native Method)
-W/System.err(  705):    at android.media.MediaHTTPConnection.readAt(MediaHTTPConnection.java:419)
-W/System.err(  705):    at android.media.IMediaHTTPConnection$Stub.onTransact(IMediaHTTPConnection.java:150)
-W/System.err(  705):    at android.os.Binder.execTransactInternal(Binder.java:1448)
-W/System.err(  705):    at android.os.Binder.execTransact(Binder.java:1382)
+S C:\dukflutter run -d chrome --dart-define=API_BASE_URL=https://dukaanzone-hs7g.onrender.com      
+Launching
+lib\main.dart on
+Chrome in debug
+mode...
+Waiting for connection from debug service on Chrome...             34.3s
 
-Application finished.
+Flutter run key
+commands.
+r Hot reload. 
+R Hot restart.
+h List all available
+interactive
+commands.
+d Detach (terminate
+"flutter run" but
+leave application
+running).
+c Clear the screen
+q Quit (terminate
+the application on
+the device).
+
+This app is linked
+to the debug
+service:
+ws://127.0.0.1:59035
+/SmjGIY_J260=/ws
+Debug service
+listening on
+ws://127.0.0.1:59035
+/SmjGIY_J260=/ws
+A Dart VM Service on
+Chrome is available
+at:
+http://127.0.0.1:590
+35/SmjGIY_J260=
+The Flutter DevTools
+debugger and
+profiler on Chrome
+is available at:
+http://127.0.0.1:590
+35/SmjGIY_J260=/devt
+ools/?uri=ws://127.0
+.0.1:59035/SmjGIY_J2
+60=/ws
+Starting application
+from main method in:
+org-dartlang-app:/we
+b_entrypoint.dart.
+RethrownDartError:
+cropper has not been
+initialized
+
+
+dart-sdk/lib/_intern
+al/js_dev_runtime/pr
+ivate/ddc_runtime/er
+rors.dart 307:10
+createErrorWithStack
+dart-sdk/lib/_intern
+al/js_dev_runtime/pa
+tch/core_patch.dart
+280:28
+_throw
+dart-sdk/lib/core/er
+rors.dart 120:5
+throwWithStackTrace
+dart-sdk/lib/async/z
+one_root.dart 22:11
+<fn>
+dart-sdk/lib/async/s
+chedule_microtask.da
+rt 40:34
+_microtaskLoop
+dart-sdk/lib/async/s
+chedule_microtask.da
+rt 49:5
+_startMicrotaskLoop
+dart-sdk/lib/_intern
+al/js_dev_runtime/pr
+ivate/ddc_runtime/op
+erations.dart 118:77
+tear
+dart-sdk/lib/_intern
+al/js_dev_runtime/pa
+tch/async_patch.dart
+183:69
+<fn>
+DartError: Assertion
+failed:
+file:///C:/dukaanZon
+e/flutter_app/.pub-c
+ache/hosted/pub.dev/
+image_cropper_for_we
+b-7.0.0/lib/image_cr
+opper_for_web.dart:1
+25:20
+cropper == null
+"cropper was already
+initialized"
+dart-sdk/lib/_intern
+al/js_dev_runtime/pr
+ivate/ddc_runtime/er
+rors.dart 274:3
+throw_
+dart-sdk/lib/_intern
+al/js_dev_runtime/pr
+ivate/ddc_runtime/er
+rors.dart 44:3
+assertFailed
+package:image_croppe
+r_for_web/image_crop
+per_for_web.dart
+125:27
+<fn>
+dart-sdk/lib/async/f
+uture.dart 440:42
+<fn>
+dart-sdk/lib/_intern
+al/js_dev_runtime/pr
+ivate/isolate_helper
+.dart 47:11
+internalCallback
+Login failed:
+Invalid email or
+password
+RethrownDartError:
+cropper has not been
+initialized
+
+
+dart-sdk/lib/_intern
+al/js_dev_runtime/pr
+ivate/ddc_runtime/er
+rors.dart 307:10
+createErrorWithStack
+dart-sdk/lib/_intern
+al/js_dev_runtime/pa
+tch/core_patch.dart
+280:28
+_throw
+dart-sdk/lib/core/er
+rors.dart 120:5
+throwWithStackTrace
+dart-sdk/lib/async/z
+one_root.dart 22:11
+<fn>
+dart-sdk/lib/async/s
+chedule_microtask.da
+rt 40:34
+_microtaskLoop
+dart-sdk/lib/async/s
+chedule_microtask.da
+rt 49:5
+_startMicrotaskLoop
+dart-sdk/lib/_intern
+al/js_dev_runtime/pr
+ivate/ddc_runtime/op
+erations.dart 118:77
+tear
+dart-sdk/lib/_intern
+al/js_dev_runtime/pa
+tch/async_patch.dart
+183:69
+<fn>
+DartError: Assertion
+failed:
+file:///C:/dukaanZon
+e/flutter_app/.pub-c
+ache/hosted/pub.dev/
+image_cropper_for_we
+b-7.0.0/lib/image_cr
+opper_for_web.dart:1
+25:20
+cropper == null
+"cropper was already
+initialized"
+dart-sdk/lib/_intern
+al/js_dev_runtime/pr
+ivate/ddc_runtime/er
+rors.dart 274:3
+throw_
+dart-sdk/lib/_intern
+al/js_dev_runtime/pr
+ivate/ddc_runtime/er
+rors.dart 44:3
+assertFailed
+package:image_croppe
+r_for_web/image_crop
+per_for_web.dart
+125:27
+<fn>
+dart-sdk/lib/async/f
+uture.dart 440:42
+<fn>
+dart-sdk/lib/_intern
+al/js_dev_runtime/pr
+ivate/isolate_helper
+.dart 47:11
+internalCallback
+Login failed:
+Invalid email or
+password
+
+Application
+finished.
+PS C:\dukaanZone\flutter_app> flutter run -d chrome --dart-define=API_BASE_URL=https://dukaanzone-hs7g.onrender.com
+Launching
+lib\main.dart on
+Chrome in debug
+mode...
+Waiting for connection from debug service on Chrome...      
+lib/dukaan.dart:4:1:
+Error: Error when
+reading
+'lib/services/audio_
+manager.dart': The
+system cannot find
+the file specified
+Waiting for connection from debug service on Chrome...      
+export
+'services/audio_mana
+ger.dart';
+Waiting for connection from debug service on Chrome...      
+^
+Waiting for connection from debug service on Chrome...      
+lib/services/razorpa
+y_service.dart:74:34
+: Error: The method
+'_mapCompletedPaymen
+t' isn't defined for
+the type
+'PaymentSessionServi
+ce'.
+Waiting for connection from debug service on Chrome...      
+ -
+ 'PaymentSessionServ
+ ice' is from
+ 'package:dukaan_zon
+ e_flutter/services/
+ services.dart'
+ ('lib/services/serv
+ ices.dart').
+Waiting for connection from debug service on Chrome...      
+Try correcting the
+name to the name of
+an existing method,
+or defining a method
+named
+'_mapCompletedPaymen
+t'.
+Waiting for connection from debug service on Chrome...      
+    return
+    paymentSessionSe
+    rvice._mapComple
+    tedPayment(compl
+    etedPayment,
+    fallbackShop:
+    shop);
+Waiting for connection from debug service on Chrome...      
+          ^^^^^^^^^^
+          ^^^^^^^^^^
+Waiting for connection from debug service on Chrome...      
+lib/services/service
+s.dart:908:20:
+Error: The getter
+'globalCurrentUser'
+isn't defined for
+the type
+'PaymentSessionServi
+ce'.
+Waiting for connection from debug service on Chrome...      
+ -
+ 'PaymentSessionServ
+ ice' is from
+ 'package:dukaan_zon
+ e_flutter/services/
+ services.dart'
+ ('lib/services/serv
+ ices.dart').
+Waiting for connection from debug service on Chrome...      
+Try correcting the
+name to the name of
+an existing getter,
+or defining a getter
+or field named
+'globalCurrentUser'.
+Waiting for connection from debug service on Chrome...      
+      final user =
+      globalCurrentU
+      ser.value;
+Waiting for connection from debug service on Chrome...      
+          ^^^^^^^^^^
+          ^^^^^^^
+Waiting for connection from debug service on Chrome...      
+lib/ui/pages/user/us
+er_addresses_page.da
+rt:93:76: Error: Not
+a constant
+expression.
+Waiting for connection from debug service on Chrome...      
+          final loc
+          = await
+          push<Map<S
+          tring,
+          double>>(c
+          ontext,
+          const
+          DeviceLoca
+          tionChoose
+          r());
+Waiting for connection from debug service on Chrome...      
+          ^^^^^^^^^^
+          ^^^^^^^^^^
+          ^
+Waiting for connection from debug service on Chrome...      
+lib/ui/pages/shared/
+call_screen.dart:205
+:21: Error: No named
+parameter with the
+name 'clipBehavior'.
+Waiting for connection from debug service on Chrome...      
+          clipBehavi
+          or:
+          Clip.antiA
+          lias,
+Waiting for connection from debug service on Chrome...      
+          ^^^^^^^^^^
+          ^^
+Waiting for connection from debug service on Chrome...      
+/C:/Users/WHO%20ME!/
+flutter/packages/flu
+tter/lib/src/paintin
+g/box_decoration.dar
+t:93:9: Context:
+Found this
+candidate, but the
+arguments don't
+match.
+Waiting for connection from debug service on Chrome...      
+  const
+  BoxDecoration({
+Waiting for connection from debug service on Chrome...      
+        ^^^^^^^^^^^^
+        ^
+Waiting for connection from debug service on Chrome..   35.6s          |
+Failed to compile application.
 PS C:\dukaanZone\flutter_app> 

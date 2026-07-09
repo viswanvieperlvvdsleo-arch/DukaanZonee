@@ -905,7 +905,7 @@ class PaymentSessionService {
     });
 
     if (data['status'] == 'pending') {
-      final user = globalCurrentUser.value;
+      final user = authService.currentUser.value;
       final paymentData = Map<String, dynamic>.from(data['payment'] as Map);
       return await razorpayService.startPayment(
         keyId: data['keyId']?.toString() ?? '',
@@ -914,8 +914,9 @@ class PaymentSessionService {
         amountCents: paymentData['grossCents'] as int? ?? 0,
         shopName: shop.name ?? 'Local Shop',
         userEmail: user?.email ?? 'customer@dukaanzone.local',
-        userPhone: user?.phone ?? '9999999999',
+        userPhone: user?.mobile ?? '9999999999',
         shop: shop,
+        mapPayment: _mapCompletedPayment,
       );
     }
 

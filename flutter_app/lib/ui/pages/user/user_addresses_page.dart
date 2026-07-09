@@ -49,7 +49,8 @@ class _UserAddressesPageState extends State<UserAddressesPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
-      builder: (context) => Padding(
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
           left: 24,
@@ -90,14 +91,33 @@ class _UserAddressesPageState extends State<UserAddressesPage> {
             const SizedBox(height: 16),
             OutlinedButton.icon(
               onPressed: () async {
-                final loc = await push<Map<String, double>>(context, const DeviceLocationChooser());
-                if (loc != null) {
-                  lat = loc['latitude'];
-                  lng = loc['longitude'];
+                final location = await getDeviceLocation();
+                if (location != null) {
+                  setModalState(() {
+                    lat = location.latitude;
+                    lng = location.longitude;
+                  });
+                  addrCtrl.text = addrCtrl.text.isEmpty
+                      ? 'Pinned map location (${lat!.toStringAsFixed(5)}, ${lng!.toStringAsFixed(5)})'
+                      : addrCtrl.text;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Current location pinned!'),
+                      backgroundColor: Color(0xFF059669),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Could not read location. Allow location access.'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
                 }
               },
-              icon: const Icon(Icons.map_outlined),
-              label: const Text('Pin on Map (Optional)'),
+              icon: const Icon(Icons.my_location_outlined),
+              label: Text(lat != null ? 'Location Pinned ✓' : 'Use Current Location (Optional)'),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -146,6 +166,7 @@ class _UserAddressesPageState extends State<UserAddressesPage> {
             const SizedBox(height: 32),
           ],
         ),
+      ),
       ),
     );
   }

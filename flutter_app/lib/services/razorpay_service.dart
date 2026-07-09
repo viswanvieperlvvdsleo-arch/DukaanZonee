@@ -8,7 +8,6 @@ class RazorpayService {
 
   Razorpay? _razorpay;
   Completer<Map<String, dynamic>>? _paymentCompleter;
-  String? _pendingPaymentId;
   String? _pendingOrderId;
 
   void init() {
@@ -33,10 +32,10 @@ class RazorpayService {
     required String userEmail,
     required String userPhone,
     required Shop shop,
+    required CompletedPayment Function(Map<String, dynamic>, {Shop? fallbackShop}) mapPayment,
   }) async {
     init();
     _paymentCompleter = Completer<Map<String, dynamic>>();
-    _pendingPaymentId = paymentId;
     _pendingOrderId = orderId;
 
     final options = {
@@ -57,11 +56,11 @@ class RazorpayService {
     try {
       _razorpay!.open(options);
     } catch (e) {
-      _paymentCompleter?.completeError('Razorpay fail to open: $e');
+      _paymentCompleter?.completeError('Razorpay failed to open: $e');
     }
 
     final result = await _paymentCompleter!.future;
-    
+
     // Verify signature on backend
     final verifyData = await apiClient.postJson('/api/payment-sessions/razorpay/verify', {
       'paymentId': paymentId,
@@ -71,7 +70,7 @@ class RazorpayService {
     });
 
     final completedPayment = Map<String, dynamic>.from(verifyData['payment'] as Map);
-    return paymentSessionService._mapCompletedPayment(completedPayment, fallbackShop: shop);
+    return mapPayment(completedPayment, fallbackShop: shop);
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {

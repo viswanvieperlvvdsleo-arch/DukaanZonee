@@ -199,10 +199,10 @@ class _CallScreenState extends State<CallScreen> {
                 width: 120,
                 height: 160,
                 child: Container(
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: Colors.white30, width: 2),
-                    clipBehavior: Clip.antiAlias,
                   ),
                   child: AgoraVideoView(
                     controller: VideoViewController(
