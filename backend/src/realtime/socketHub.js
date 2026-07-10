@@ -522,34 +522,48 @@ async function handleCallEnd(socket, payload) {
   if (!callId) return;
 
   const requestedStatus = normalizeCallStatus(payload.status);
-  const update = await query(
-    `UPDATE call_records
-     SET status = $2,
-         answered_at = CASE WHEN $2 = 'accepted' THEN COALESCE(answered_at, NOW()) ELSE answered_at END,
-         ended_at = CASE WHEN $2 <> 'accepted' THEN COALESCE(ended_at, NOW()) ELSE ended_at END,
-         duration_seconds = CASE
-           WHEN $2 IN ('ended', 'declined', 'missed')
-           THEN GREATEST(0, EXTRACT(EPOCH FROM (NOW() - started_at))::INTEGER)
-           ELSE duration_seconds
-         END
-     WHERE id = $1
-       AND (
-         caller_user_id = $3
-         OR target_user_id = $3
-         OR shop_id IN (SELECT id FROM shops WHERE seller_id = $3)
-         OR (scope = 'b2b' AND $4 = 'seller'
-           AND (
-             split_part(room_id, ':', 2) = $3
-             OR split_part(room_id, ':', 3) = $3
+
+  // Non-fatal: if call_records doesn't exist yet, still proceed
+  let call = null;
+  try {
+    const update = await query(
+      `UPDATE call_records
+       SET status = $2,
+           answered_at = CASE WHEN $2 = 'accepted' THEN COALESCE(answered_at, NOW()) ELSE answered_at END,
+           ended_at = CASE WHEN $2 <> 'accepted' THEN COALESCE(ended_at, NOW()) ELSE ended_at END,
+           duration_seconds = CASE
+             WHEN $2 IN ('ended', 'declined', 'missed')
+             THEN GREATEST(0, EXTRACT(EPOCH FROM (NOW() - COALESCE(answered_at, started_at)))::INTEGER)
+             ELSE duration_seconds
+           END
+       WHERE id = $1
+         AND (
+           caller_user_id = $3
+           OR target_user_id = $3
+           OR shop_id IN (SELECT id FROM shops WHERE seller_id = $3)
+           OR (scope = 'b2b' AND $4 = 'seller'
+             AND (
+               split_part(room_id, ':', 2) = $3
+               OR split_part(room_id, ':', 3) = $3
+             )
            )
          )
-       )
-     RETURNING id, room_id, scope, caller_user_id, target_user_id, shop_id,
-       call_kind, status, started_at, answered_at, ended_at, duration_seconds`,
-    [callId, requestedStatus, socket.user.sub, socket.user.role],
-  );
-  const call = update.rows[0];
-  if (!call) return;
+       RETURNING id, room_id, scope, caller_user_id, target_user_id, shop_id,
+         call_kind, status, started_at, answered_at, ended_at, duration_seconds`,
+      [callId, requestedStatus, socket.user.sub, socket.user.role],
+    );
+    call = update.rows[0];
+  } catch (dbErr) {
+    console.warn('[call.end] DB update failed (non-fatal):', dbErr.message);
+    // Broadcast minimal event using payload data
+    send(socket, 'call.updated', { id: callId, status: requestedStatus });
+    return;
+  }
+
+  if (!call) {
+    console.warn('[call.end] call record not found or unauthorized for callId:', callId);
+    return;
+  }
 
   const userIds = await getCallParticipantIds(call);
   const event = {
@@ -570,12 +584,66 @@ async function handleCallEnd(socket, payload) {
     },
   };
 
-  if (call.scope === 'b2b') {
-    publishToUsers([...userIds], 'call.updated', event);
-  } else {
-    publishToUsers([...userIds], 'call.updated', event);
+  publishToUsers([...userIds], 'call.updated', event);
+  console.log('[call.end] published call.updated status=%s to %d users', call.status, userIds.size);
+
+  // ── Save a call-log message in the chat room ──────────────────────
+  const terminalStatuses = ['ended', 'declined', 'missed'];
+  if (terminalStatuses.includes(call.status) && call.room_id) {
+    try {
+      const durationSec = call.duration_seconds ?? 0;
+      const durationStr = durationSec > 0
+        ? ` · ${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, '0')}`
+        : '';
+
+      let callText;
+      if (call.status === 'missed') {
+        callText = `📵 Missed ${call.call_kind === 'video' ? 'video' : 'voice'} call`;
+      } else if (call.status === 'declined') {
+        callText = `🚫 ${call.call_kind === 'video' ? 'Video' : 'Voice'} call declined`;
+      } else {
+        callText = `${call.call_kind === 'video' ? '📹' : '📞'} ${call.call_kind === 'video' ? 'Video' : 'Voice'} call${durationStr}`;
+      }
+
+      const msgId = makeId('call_msg');
+      await query(
+        `INSERT INTO chat_messages (
+          id, room_id, scope, sender_user_id, target_user_id, shop_id,
+          text, message_type, delivery_status, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'call_log', 'sent_online', NOW())
+        ON CONFLICT (id) DO NOTHING`,
+        [
+          msgId,
+          call.room_id,
+          call.scope,
+          call.caller_user_id,
+          call.target_user_id,
+          call.shop_id,
+          callText,
+        ],
+      );
+
+      // Broadcast the chat message to participants so it appears live
+      const chatEvent = {
+        id: msgId,
+        roomId: call.room_id,
+        scope: call.scope,
+        text: callText,
+        type: 'call_log',
+        shopId: call.shop_id,
+        sender: {
+          id: call.caller_user_id,
+          name: socket.user.name,
+          role: socket.user.role,
+        },
+      };
+      publishToUsers([...userIds], 'chat.message', chatEvent);
+    } catch (msgErr) {
+      console.warn('[call.end] call-log message insert failed (non-fatal):', msgErr.message);
+    }
   }
 }
+
 
 async function getCallParticipantIds(call) {
   const userIds = new Set();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
+import 'package:dukaan_zone_flutter/ui/pages/shared/call_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,8 +13,28 @@ Future<void> main() async {
   runApp(const DukaanZoneApp());
 }
 
-class DukaanZoneApp extends StatelessWidget {
+class DukaanZoneApp extends StatefulWidget {
   const DukaanZoneApp({super.key});
+
+  @override
+  State<DukaanZoneApp> createState() => _DukaanZoneAppState();
+}
+
+class _DukaanZoneAppState extends State<DukaanZoneApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Start the global call manager so incoming calls are intercepted app-wide
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      GlobalCallManager.instance.init();
+    });
+  }
+
+  @override
+  void dispose() {
+    GlobalCallManager.instance.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +48,7 @@ class DukaanZoneApp extends StatelessWidget {
           darkTheme: AppTheme.dark,
           themeMode: themeMode,
           scrollBehavior: const _SmoothScrollBehavior(),
+          navigatorKey: navigatorKey,
           home: const SplashPage(),
         );
       },
@@ -38,12 +60,14 @@ class _SmoothScrollBehavior extends ScrollBehavior {
   const _SmoothScrollBehavior();
 
   @override
-  Widget buildScrollbar(BuildContext context, Widget child, ScrollableDetails details) {
+  Widget buildScrollbar(
+      BuildContext context, Widget child, ScrollableDetails details) {
     return child;
   }
 
   @override
-  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) {
+  Widget buildOverscrollIndicator(
+      BuildContext context, Widget child, ScrollableDetails details) {
     return child;
   }
 

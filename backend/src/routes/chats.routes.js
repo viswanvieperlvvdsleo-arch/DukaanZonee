@@ -83,16 +83,46 @@ chatsRouter.get('/rooms/:roomId/call-token', async (req, res, next) => {
   try {
     const roomId = req.params.roomId;
     await assertRoomAccess(req.user, roomId);
+
+    const appId = process.env.AGORA_APP_ID || '';
+    const appCertificate = process.env.AGORA_APP_CERTIFICATE || '';
+    let token = '';
+
+    if (appId && appCertificate) {
+      // Generate a proper RTC token (valid 24 hours)
+      try {
+        const { RtcTokenBuilder, RtcRole } = await import('agora-token');
+        const expireTimeSeconds = 86400; // 24 hours
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        const privilegeExpireTs = currentTimestamp + expireTimeSeconds;
+        token = RtcTokenBuilder.buildTokenWithUid(
+          appId,
+          appCertificate,
+          roomId,
+          0, // uid 0 = any user
+          RtcRole.PUBLISHER,
+          privilegeExpireTs,
+          privilegeExpireTs,
+        );
+      } catch (tokenErr) {
+        console.warn('[call-token] Token generation failed, using empty token (Testing Mode):', tokenErr.message);
+      }
+    } else {
+      // No App Certificate = Agora Testing Mode (token not required)
+      console.log('[call-token] AGORA_APP_CERTIFICATE not set — using Testing Mode (no token)');
+    }
+
     res.json({
-      appId: process.env.AGORA_APP_ID || '',
+      appId,
       channelName: roomId,
-      uid: req.user.sub,
-      token: ''
+      uid: 0,
+      token,
     });
   } catch (error) {
     next(error);
   }
 });
+
 
 chatsRouter.get('/rooms/:roomId/messages', async (req, res, next) => {
   try {

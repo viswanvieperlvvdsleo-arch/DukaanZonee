@@ -1582,6 +1582,7 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
     if (type == 'video') return mediaName ?? 'Video';
     if (type == 'pdf') return mediaName ?? 'Document';
     if (type == 'voice') return mediaName ?? 'Voice note';
+    if (type == 'call_log') return mediaName ?? '';
     if (type == 'deleted') return 'This message was deleted';
     return '';
   }
