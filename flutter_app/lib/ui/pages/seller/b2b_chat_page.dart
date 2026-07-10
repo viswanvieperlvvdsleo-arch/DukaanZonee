@@ -891,6 +891,30 @@ class _B2BChatRoomPageState extends State<B2BChatRoomPage> {
   }
 
   void _handleLiveEvent(LiveEvent event) {
+    if (event.type == 'call.started') {
+      final kind = event.payload['kind']?.toString() ?? 'voice';
+      final channelName = event.payload['roomId']?.toString() ?? 'b2b:seller';
+      final callId = event.payload['id']?.toString() ?? 'incoming';
+      
+      final callerData = Map<String, dynamic>.from(event.payload['caller'] as Map? ?? {});
+      final senderId = callerData['id']?.toString();
+      
+      // Ignore if we are the caller
+      if (senderId == authService.currentUser.value?.id) return;
+      
+      if (!mounted) return;
+      push(
+        context,
+        CallScreen(
+          channelName: channelName,
+          callId: callId,
+          isVideo: kind == 'video',
+          remoteName: widget.merchant['name']?.toString() ?? callerData['name']?.toString() ?? 'Partner',
+          remoteAvatarColor: widget.merchant['avatarColor'] as Color? ?? primary,
+        ),
+      );
+      return;
+    }
     if (event.type == 'presence.update') {
       final userId = event.payload['userId']?.toString();
       if (userId == _targetSellerId && mounted) setState(() {});

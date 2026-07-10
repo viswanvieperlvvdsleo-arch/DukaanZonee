@@ -454,6 +454,8 @@ async function handleCallStart(socket, payload) {
   let shopId = payload.shopId?.toString() || null;
   let targetUserId = payload.targetUserId?.toString() || null;
 
+  console.log('[call.start] from user:', socket.user.sub, 'room:', roomId, 'scope:', scope, 'shopId:', shopId, 'targetUserId:', targetUserId);
+
   if (targetUserId) {
     targetUserIds.add(targetUserId);
   }
@@ -472,15 +474,22 @@ async function handleCallStart(socket, payload) {
     targetUserIds.add(access.shop.seller_id);
   }
 
-  await query(
-    `INSERT INTO call_records (
-      id, room_id, scope, caller_user_id, target_user_id, shop_id,
-      call_kind, status, started_at
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, 'ringing', NOW())
-    ON CONFLICT (id) DO NOTHING`,
-    [callId, roomId, scope, socket.user.sub, targetUserId, shopId, kind],
-  );
+  console.log('[call.start] resolved targetUserIds:', [...targetUserIds], 'shopId:', shopId);
+
+  // Non-fatal DB write — call still proceeds even if DB write fails
+  try {
+    await query(
+      `INSERT INTO call_records (
+        id, room_id, scope, caller_user_id, target_user_id, shop_id,
+        call_kind, status, started_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'ringing', NOW())
+      ON CONFLICT (id) DO NOTHING`,
+      [callId, roomId, scope, socket.user.sub, targetUserId, shopId, kind],
+    );
+  } catch (dbErr) {
+    console.warn('[call.start] DB write failed (non-fatal):', dbErr.message);
+  }
 
   const event = {
     id: callId,
@@ -498,11 +507,13 @@ async function handleCallStart(socket, payload) {
     },
   };
 
+  let delivered = 0;
   if (scope === 'b2b') {
-    publishToUsers([...targetUserIds, ...b2BParticipantIdsFromRoom(roomId)], 'call.started', event);
+    delivered = publishToUsers([...targetUserIds, ...b2BParticipantIdsFromRoom(roomId)], 'call.started', event);
   } else {
-    publishToUsers([...targetUserIds], 'call.started', event);
+    delivered = publishToUsers([...targetUserIds], 'call.started', event);
   }
+  console.log('[call.start] published call.started to', delivered, 'sockets');
   send(socket, 'call.receipt', event);
 }
 
