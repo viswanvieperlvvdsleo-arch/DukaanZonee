@@ -8,6 +8,8 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 import 'package:dukaan_zone_flutter/services/voice_recorder/voice_recorder.dart';
+import 'package:dukaan_zone_flutter/ui/pages/shared/document_preview_screen.dart';
+import 'custom_camera_page.dart' as custom_camera;
 
 /// Reusable Media Input Bar for B2B Chat, Seller Payment Chat, and User Payment Chat.
 /// It provides message input, attachment options (Images, Videos, PDFs, Voice Recorder),
@@ -73,9 +75,18 @@ class _MediaInputBarState extends State<MediaInputBar> {
               spacing: 12,
               children: [
                 AttachOption(
-                  icon: Icons.photo_library_rounded,
+                  icon: Icons.camera_alt_rounded,
+                  label: 'Camera',
+                  color: primary,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _openCustomCamera();
+                  },
+                ),
+                AttachOption(
+                  icon: Icons.image_rounded,
                   label: 'Image',
-                  color: Colors.blue,
+                  color: primary,
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickImages();
@@ -84,7 +95,7 @@ class _MediaInputBarState extends State<MediaInputBar> {
                 AttachOption(
                   icon: Icons.videocam_rounded,
                   label: 'Video',
-                  color: Colors.deepPurple,
+                  color: primary,
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickVideo();
@@ -93,7 +104,7 @@ class _MediaInputBarState extends State<MediaInputBar> {
                 AttachOption(
                   icon: Icons.picture_as_pdf_rounded,
                   label: 'Document',
-                  color: Colors.red,
+                  color: primary,
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickDocument();
@@ -102,7 +113,7 @@ class _MediaInputBarState extends State<MediaInputBar> {
                 AttachOption(
                   icon: Icons.mic_rounded,
                   label: 'Voice',
-                  color: Colors.orange,
+                  color: primary,
                   onTap: () {
                     Navigator.pop(ctx);
                     _startVoiceRecording();
@@ -112,7 +123,7 @@ class _MediaInputBarState extends State<MediaInputBar> {
                   AttachOption(
                     icon: Icons.payment_rounded,
                     label: 'Pay',
-                    color: Colors.green,
+                    color: success,
                     onTap: () {
                       Navigator.pop(ctx);
                       widget.onPayTap!.call();
@@ -125,6 +136,29 @@ class _MediaInputBarState extends State<MediaInputBar> {
         ),
       ),
     );
+  }
+
+  Future<void> _openCustomCamera() async {
+    if (!mounted) return;
+    final result = await push<Map<String, dynamic>>(
+      context,
+      const custom_camera.CustomCameraPage(),
+    );
+    if (result != null) {
+      final file = XFile(result['path']);
+      final media = await _prepareDataUrl(
+        file,
+        fallbackPath: result['path'],
+        fallbackMime: 'image/png', // Always PNG because of RepaintBoundary
+      );
+      widget.onMediaSent('image', media.url, {
+        'caption': result['caption'],
+        'mediaName': media.name,
+        'mediaMime': media.mime,
+        'mediaSizeBytes': media.sizeBytes,
+        'sizeBytes': media.sizeBytes,
+      });
+    }
   }
 
   Future<void> _pickImages() async {
