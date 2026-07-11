@@ -1183,30 +1183,6 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
   }
 
   void _handleLiveEvent(LiveEvent event) {
-    if (event.type == 'call.started') {
-      final kind = event.payload['kind']?.toString() ?? 'voice';
-      final channelName = event.payload['roomId']?.toString() ?? 'shop_payment';
-      final callId = event.payload['id']?.toString() ?? 'incoming';
-      
-      final callerData = Map<String, dynamic>.from(event.payload['caller'] as Map? ?? {});
-      final senderId = callerData['id']?.toString();
-      
-      // Ignore if we are the caller
-      if (senderId == authService.currentUser.value?.id) return;
-      
-      if (!mounted) return;
-      push(
-        context,
-        CallScreen(
-          channelName: channelName,
-          callId: callId,
-          isVideo: kind == 'video',
-          remoteName: widget.shop.name ?? callerData['name']?.toString() ?? 'Seller',
-          remoteAvatarColor: primary,
-        ),
-      );
-      return;
-    }
     if (event.type == 'chat.receipt') {
       _applyReceipt(event);
       return;

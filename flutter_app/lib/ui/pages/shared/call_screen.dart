@@ -517,9 +517,17 @@ class _CallScreenState extends State<CallScreen> {
     _leaveAndPop();
   }
 
+  bool _canPop = false;
+
   void _leaveAndPop() {
     _durationTimer?.cancel();
-    if (mounted) Navigator.of(context).pop();
+    if (!mounted) return;
+    setState(() => _canPop = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+    });
   }
 
   void _showCallEndMessage(String msg) {
@@ -568,8 +576,11 @@ class _CallScreenState extends State<CallScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
-      onPopInvoked: (_) => _endCall(),
+      canPop: _canPop,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _endCall();
+      },
       child: Scaffold(
         backgroundColor: const Color(0xFF0A0A1A),
         body: SafeArea(

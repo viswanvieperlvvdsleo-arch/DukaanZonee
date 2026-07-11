@@ -1209,29 +1209,6 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
   }
 
   void _handleLiveEvent(LiveEvent event) {
-    if (event.type == 'call.started') {
-      final kind = event.payload['kind']?.toString() ?? 'voice';
-      final channelName = event.payload['roomId']?.toString() ?? 'shop:seller';
-      final callId = event.payload['id']?.toString() ?? 'incoming';
-      final callerData = Map<String, dynamic>.from(event.payload['caller'] as Map? ?? {});
-      final senderId = callerData['id']?.toString();
-      
-      // Ignore if we are the caller
-      if (senderId == authService.currentUser.value?.id) return;
-      
-      if (!mounted) return;
-      push(
-        context,
-        CallScreen(
-          channelName: channelName,
-          callId: callId,
-          isVideo: kind == 'video',
-          remoteName: widget.contact['name']?.toString() ?? 'Customer',
-          remoteAvatarColor: widget.contact['avatarColor'] as Color? ?? primary,
-        ),
-      );
-      return;
-    }
     if (event.type == 'chat.receipt') {
       _applyReceipt(event);
       return;
