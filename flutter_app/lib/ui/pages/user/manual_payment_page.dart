@@ -5,6 +5,7 @@ import 'package:dukaan_zone_flutter/dukaan.dart';
 import 'package:dukaan_zone_flutter/ui/pages/shared/chat_scroll_cues.dart';
 import 'package:dukaan_zone_flutter/ui/pages/shared/chat_typing_wave.dart';
 import 'package:dukaan_zone_flutter/ui/pages/shared/chat_voice_note_player.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ─────────────────────────────────────────────────────────────
 //  Message Status Color System
@@ -1292,73 +1293,51 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
     });
   }
 
-  void _showBankSelection(String amountStr) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Select Bank Account',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Paying $amountStr to ${widget.shop.name}',
-              style: const TextStyle(color: muted),
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              onTap: () {
-                Navigator.pop(ctx);
-                _proceedToPin(amountStr, 'HDFC Bank');
-              },
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.account_balance, color: Colors.blue),
-              ),
-              title: const Text(
-                'HDFC Bank',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-              subtitle: const Text('**** 1234'),
-              trailing: const Icon(Icons.check_circle, color: primary),
-            ),
-            ListTile(
-              onTap: () {
-                Navigator.pop(ctx);
-                _proceedToPin(amountStr, 'SBI Bank');
-              },
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.account_balance, color: Colors.green),
-              ),
-              title: const Text(
-                'State Bank of India',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-              subtitle: const Text('**** 5678'),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
+  Future<void> _processRealPayment(double amount) async {
+    try {
+      final payment = await paymentSessionService.completeCheckout(
+        shop: widget.shop,
+        amount: amount,
+        selectedItems: widget.prefilledItems ?? [],
+        provider: 'razorpay',
+      );
+      if (!mounted) return;
+
+      final itemsLabel = payment.itemsLabel;
+      final newTx = {
+        'merchant': payment.shopName,
+        'date': 'Today, ${_timeNow()}',
+        'amount': payment.amountLabel,
+        'items': itemsLabel,
+        'icon': Icons.storefront_outlined,
+      };
+      
+      globalPaymentHistory.value = [newTx, ...globalPaymentHistory.value];
+      
+      final id = 'pay-${DateTime.now().millisecondsSinceEpoch}';
+      setState(() {
+        _history.add({
+          'id': id,
+          'amount': payment.amountLabel,
+          'status': 'PAID',
+          'time': _timeNow(),
+          'date': 'Today',
+          'isSent': true,
+          'type': 'payment',
+          'items': itemsLabel,
+        });
+        _newMessageCount++;
+        _showJumpToBottom = true;
+      });
+      _controller.clear();
+      _scrollToBottom();
+      
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Payment failed: $e')),
+      );
+    }
   }
 
   void _openQuickPayFromChat() {
@@ -1412,7 +1391,8 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
               child: ElevatedButton.icon(
                 onPressed: () {
                   final value = amountController.text.trim();
-                  if (double.tryParse(value) == null) {
+                  final amount = double.tryParse(value);
+                  if (amount == null || amount <= 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Enter a valid payment amount.'),
@@ -1421,7 +1401,7 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
                     return;
                   }
                   Navigator.pop(ctx);
-                  _showBankSelection('₹$value');
+                  _processRealPayment(amount);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primary,
@@ -1442,66 +1422,6 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
         ),
       ),
     ).whenComplete(amountController.dispose);
-  }
-
-  void _proceedToPin(String amountStr, String bank) {
-    push(
-      context,
-      PinEntryPage(
-        amount: amountStr,
-        orderId: 'TXN-${DateTime.now().millisecond}',
-      ),
-    ).then((success) {
-      if (success == true) {
-        // Deduct from bank balance
-        final double amountVal =
-            double.tryParse(
-              amountStr.replaceAll('₹', '').replaceAll(',', '').trim(),
-            ) ??
-            0.0;
-        final map = Map<String, double>.from(globalBankBalances.value);
-        if (map.containsKey(bank)) {
-          map[bank] = (map[bank] ?? 0.0) - amountVal;
-          globalBankBalances.value = map;
-        }
-
-        // Build items label from prefilled cart or fallback to direct
-        String itemsLabel = 'Direct Payment ($bank)';
-        if (widget.prefilledItems != null &&
-            widget.prefilledItems!.isNotEmpty) {
-          final parts = widget.prefilledItems!.map((e) {
-            final p = e['product'] as Product;
-            final qty = e['qty'] as int;
-            return '${p.name} x$qty';
-          }).toList();
-          itemsLabel = parts.join(', ');
-        }
-
-        final newTx = {
-          'merchant': widget.shop.name,
-          'date': 'Today, ${_timeNow()}',
-          'amount': amountStr,
-          'items': itemsLabel,
-          'icon': Icons.storefront_outlined,
-        };
-        globalPaymentHistory.value = [newTx, ...globalPaymentHistory.value];
-        final id = 'pay-${DateTime.now().millisecondsSinceEpoch}';
-        setState(() {
-          _history.add({
-            'id': id,
-            'amount': amountStr,
-            'status': 'PAID',
-            'time': _timeNow(),
-            'date': 'Today',
-            'isSent': true,
-            'type': 'payment',
-            'items': itemsLabel,
-          });
-        });
-        _controller.clear();
-        _scrollToBottom();
-      }
-    });
   }
 
   void _triggerDeleteOptions(Map<String, dynamic> msg) {
@@ -1793,25 +1713,18 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
     );
   }
 
-  void _startHeaderCall(String kind) {
-    final id = 'call-${DateTime.now().millisecondsSinceEpoch}';
-    liveSocketService.sendCallStart(
-      id: id,
-      roomId: _liveRoomId,
-      scope: 'shop_payment',
-      kind: kind,
-      shopId: widget.shop.id,
-    );
-    push(
-      context,
-      CallScreen(
-        channelName: _liveRoomId,
-        callId: id,
-        isVideo: kind == 'video',
-        remoteName: widget.shop.name ?? 'Shop',
-        remoteAvatarColor: primary,
-      ),
-    );
+  void _startHeaderCall(String kind) async {
+    final phone = widget.shop.phone?.trim() ?? '0000000000';
+    final url = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the dialer.')),
+        );
+      }
+    }
   }
 
   @override

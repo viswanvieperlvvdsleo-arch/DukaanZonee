@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 import 'package:dukaan_zone_flutter/services/voice_recorder/voice_recorder.dart';
-import 'package:dukaan_zone_flutter/ui/pages/shared/document_preview_screen.dart';
 import 'custom_camera_page.dart' as custom_camera;
 
 /// Reusable Media Input Bar for B2B Chat, Seller Payment Chat, and User Payment Chat.
@@ -144,12 +144,14 @@ class _MediaInputBarState extends State<MediaInputBar> {
       context,
       const custom_camera.CustomCameraPage(),
     );
-    if (result != null) {
-      final file = XFile(result['path']);
+    if (result != null && result['bytes'] != null) {
+      final bytes = result['bytes'] as Uint8List;
+      final file = XFile.fromData(bytes, name: 'edited_camera.png', mimeType: 'image/png');
+      
       final media = await _prepareDataUrl(
         file,
-        fallbackPath: result['path'],
-        fallbackMime: 'image/png', // Always PNG because of RepaintBoundary
+        fallbackPath: 'edited_camera.png',
+        fallbackMime: 'image/png', 
       );
       widget.onMediaSent('image', media.url, {
         'caption': result['caption'],

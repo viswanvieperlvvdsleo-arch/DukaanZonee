@@ -70,7 +70,7 @@ class _CustomCameraPageState extends State<CustomCameraPage> {
     if (_controller == null || !_controller!.value.isInitialized) return;
     try {
       final XFile photo = await _controller!.takePicture();
-      _navigateToPreview(photo.path);
+      _navigateToPreview(photo);
     } catch (e) {
       debugPrint('Error taking picture: $e');
     }
@@ -80,7 +80,7 @@ class _CustomCameraPageState extends State<CustomCameraPage> {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image != null) {
-        _navigateToPreview(image.path);
+        _navigateToPreview(image);
       }
     } catch (e) {
       debugPrint('Error picking from gallery: $e');
@@ -94,11 +94,11 @@ class _CustomCameraPageState extends State<CustomCameraPage> {
     await _setupCameraController(_cameras[_selectedCameraIndex]);
   }
 
-  void _navigateToPreview(String path) async {
+  void _navigateToPreview(XFile imageFile) async {
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (_) => MediaEditPreviewPage(imagePath: path),
+        builder: (_) => MediaEditPreviewPage(image: imageFile),
       ),
     );
     

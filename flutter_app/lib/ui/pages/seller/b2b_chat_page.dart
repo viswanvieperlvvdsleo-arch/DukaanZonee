@@ -8,6 +8,7 @@ import '../../../services/network_service.dart';
 import '../shared/media_input_bar.dart';
 import '../shared/chat_scroll_cues.dart';
 import '../shared/chat_typing_wave.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../shared/chat_voice_note_player.dart';
 
 class B2BChatPage extends StatefulWidget {
@@ -2156,25 +2157,18 @@ class _B2BChatRoomPageState extends State<B2BChatRoomPage> {
   // ----------------------------------------------------
   // Interactive Voice, Video, and Attachments functions
   // ----------------------------------------------------
-  void _startAudioVideoCall(bool isVideo) {
-    final callId = 'call-${DateTime.now().millisecondsSinceEpoch}';
-    liveSocketService.sendCallStart(
-      id: callId,
-      roomId: _liveRoomId,
-      scope: 'b2b',
-      kind: isVideo ? 'video' : 'voice',
-      targetUserId: _targetSellerId,
-    );
-    push(
-      context,
-      CallScreen(
-        channelName: _liveRoomId,
-        callId: callId,
-        isVideo: isVideo,
-        remoteName: widget.merchant['name']?.toString() ?? 'Partner',
-        remoteAvatarColor: widget.merchant['avatarColor'] as Color? ?? primary,
-      ),
-    );
+  void _startAudioVideoCall(bool isVideo) async {
+    final phone = widget.merchant['phone']?.toString().trim() ?? '0000000000';
+    final url = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the dialer.')),
+        );
+      }
+    }
   }
 
   void _negotiateInventory() {

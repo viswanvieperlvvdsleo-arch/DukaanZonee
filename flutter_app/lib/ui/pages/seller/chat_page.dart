@@ -4,6 +4,7 @@ import 'package:dukaan_zone_flutter/dukaan.dart';
 import 'package:dukaan_zone_flutter/ui/pages/shared/chat_scroll_cues.dart';
 import 'package:dukaan_zone_flutter/ui/pages/shared/chat_typing_wave.dart';
 import 'package:dukaan_zone_flutter/ui/pages/shared/chat_voice_note_player.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ─────────────────────────────────────────────────────────────
 //  Message Status Color System (shared across all chat pages)
@@ -1825,28 +1826,18 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
     );
   }
 
-  void _startHeaderCall(String kind) {
-    final id = 'call-${DateTime.now().millisecondsSinceEpoch}';
-    final roomId = _lastLiveRoomId ??
-        widget.contact['roomId']?.toString() ??
-        'shop:seller';
-    liveSocketService.sendCallStart(
-      id: id,
-      roomId: roomId,
-      scope: 'shop_payment',
-      kind: kind,
-      targetUserId: _lastLiveCustomerId ?? widget.contact['userId']?.toString(),
-    );
-    push(
-      context,
-      CallScreen(
-        channelName: roomId,
-        callId: id,
-        isVideo: kind == 'video',
-        remoteName: widget.contact['name']?.toString() ?? 'Customer',
-        remoteAvatarColor: widget.contact['avatarColor'] as Color? ?? primary,
-      ),
-    );
+  void _startHeaderCall(String kind) async {
+    final phone = widget.contact['phone']?.toString().trim() ?? '0000000000';
+    final url = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the dialer.')),
+        );
+      }
+    }
   }
 
   @override

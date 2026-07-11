@@ -1,12 +1,12 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:image_picker/image_picker.dart';
 
 class MediaEditPreviewPage extends StatefulWidget {
-  const MediaEditPreviewPage({super.key, required this.imagePath});
-  final String imagePath;
+  const MediaEditPreviewPage({super.key, required this.image});
+  final XFile image;
 
   @override
   State<MediaEditPreviewPage> createState() => _MediaEditPreviewPageState();
@@ -79,13 +79,9 @@ class _MediaEditPreviewPageState extends State<MediaEditPreviewPage> {
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       final bytes = byteData?.buffer.asUint8List();
       if (bytes != null) {
-        final tempPath = '${Directory.systemTemp.path}/edited_${DateTime.now().millisecondsSinceEpoch}.png';
-        final file = File(tempPath);
-        await file.writeAsBytes(bytes);
-        
         if (!mounted) return;
         Navigator.pop(context, {
-          'path': tempPath,
+          'bytes': bytes,
           'caption': _captionController.text,
         });
       }
@@ -93,7 +89,7 @@ class _MediaEditPreviewPageState extends State<MediaEditPreviewPage> {
       debugPrint('Failed to save edited image: $e');
       if (!mounted) return;
       Navigator.pop(context, {
-        'path': widget.imagePath,
+        'bytes': null,
         'caption': _captionController.text,
       });
     }
@@ -179,9 +175,17 @@ class _MediaEditPreviewPageState extends State<MediaEditPreviewPage> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.file(
-                        File(widget.imagePath),
-                        fit: BoxFit.contain,
+                      FutureBuilder<Uint8List>(
+                        future: widget.image.readAsBytes(),
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return Image.memory(
+                              snapshot.data!,
+                              fit: BoxFit.contain,
+                            );
+                          }
+                          return const Center(child: CircularProgressIndicator(color: Colors.white));
+                        },
                       ),
                       CustomPaint(
                         painter: DrawingPainter(
