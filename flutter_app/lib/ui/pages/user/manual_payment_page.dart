@@ -1519,9 +1519,9 @@ class _ShopPaymentChatPageState extends State<ShopPaymentChatPage> {
   void _handleSend() {
     if (_controller.text.isEmpty) return;
     final text = _controller.text;
-    final isNumber = double.tryParse(text) != null;
-    if (isNumber) {
-      _showBankSelection('₹$text');
+    final amount = double.tryParse(text);
+    if (amount != null && amount > 0) {
+      _processRealPayment(amount);
     } else {
       _sendMessage(text);
     }
