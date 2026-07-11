@@ -12,24 +12,7 @@ class _BankDetailsPageState extends State<BankDetailsPage> {
   String _defaultBankName = 'HDFC Bank';
 
   // Local list of active accounts to allow adding new ones
-  final List<Map<String, dynamic>> _banks = [
-    {
-      'name': 'HDFC Bank',
-      'accNum': '**** 1234',
-      'type': 'Savings Account',
-      'holder': 'Aryan Malhotra',
-      'color1': const Color(0xFF0F172A),
-      'color2': const Color(0xFF1E3A8A),
-    },
-    {
-      'name': 'SBI Bank',
-      'accNum': '**** 5678',
-      'type': 'Current Account',
-      'holder': 'Pooja General Store',
-      'color1': const Color(0xFF0D9488),
-      'color2': const Color(0xFF0F766E),
-    },
-  ];
+  final List<Map<String, dynamic>> _banks = [];
 
   @override
   void initState() {
@@ -506,7 +489,6 @@ class _BankDetailsPageState extends State<BankDetailsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
           'Bank Accounts & Balance',

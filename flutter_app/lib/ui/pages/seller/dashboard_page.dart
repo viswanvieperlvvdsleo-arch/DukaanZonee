@@ -479,7 +479,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
       return Container(
         height: 118,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
           boxShadow: shadowSm,
         ),
@@ -490,7 +490,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
       return Container(
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
           boxShadow: shadowSm,
         ),
@@ -530,7 +530,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
             margin: const EdgeInsets.only(bottom: 10),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(20),
               boxShadow: shadowSm,
             ),
@@ -598,7 +598,7 @@ class _SellerDashboardPageState extends State<SellerDashboardPage> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
           boxShadow: shadowSm,
         ),
@@ -821,7 +821,7 @@ class SellerMetricDetailPage extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(28),
             boxShadow: shadowSm,
           ),
@@ -858,7 +858,7 @@ class SellerMetricDetailPage extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(24),
               boxShadow: shadowSm,
             ),
@@ -873,7 +873,7 @@ class SellerMetricDetailPage extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(22),
                 boxShadow: shadowSm,
               ),

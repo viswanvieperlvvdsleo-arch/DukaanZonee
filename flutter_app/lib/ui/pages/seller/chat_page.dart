@@ -284,7 +284,7 @@ class _SellerChatPageState extends State<SellerChatPage> {
   void _showContactOptions(BuildContext context, Map<String, dynamic> n) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1327,73 +1327,48 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
     });
   }
 
-  void _showBankSelection(String amountStr) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Select Business Account',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Paying $amountStr via UPI to ${widget.contact['name']}',
-              style: const TextStyle(color: muted),
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              onTap: () {
-                Navigator.pop(ctx);
-                _proceedToPin(amountStr, 'ICICI Merchant Pro');
-              },
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.account_balance, color: Colors.blue),
-              ),
-              title: const Text(
-                'ICICI Bank (Merchant Pro)',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-              subtitle: const Text('**** 9876'),
-              trailing: const Icon(Icons.check_circle, color: primary),
-            ),
-            ListTile(
-              onTap: () {
-                Navigator.pop(ctx);
-                _proceedToPin(amountStr, 'HDFC Business');
-              },
-              leading: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.account_balance, color: Colors.green),
-              ),
-              title: const Text(
-                'HDFC Bank (Business Account)',
-                style: TextStyle(fontWeight: FontWeight.w800),
-              ),
-              subtitle: const Text('**** 4321'),
-            ),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
+  Future<void> _processRealPayment(double amount) async {
+    final upi = widget.contact['upi']?.toString().trim() ?? '';
+    final phone = widget.contact['phone']?.toString().trim() ?? '';
+    
+    final target = upi.isNotEmpty ? upi : (phone.isNotEmpty ? '$phone@upi' : '');
+    if (target.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No payment details found for this contact.')),
+      );
+      return;
+    }
+    
+    final name = Uri.encodeComponent(widget.contact['name']?.toString() ?? 'Customer');
+    final uri = Uri.parse('upi://pay?pa=$target&pn=$name&am=$amount&cu=INR');
+    
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final id = 'pay-${DateTime.now().millisecondsSinceEpoch}';
+      setState(() {
+        for (final m in _messages) {
+          if (m['isSent'] == false) {
+            m['status'] = 'seen';
+          }
+        }
+        _messages.add({
+          'id': id,
+          'amount': amount.toString(),
+          'status': 'PAID',
+          'time': _timeNow(),
+          'isSent': true,
+          'type': 'payment',
+          'items': 'DukaanZone UPI Payout',
+        });
+      });
+      _scrollToBottom();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open a UPI app to pay.')),
+        );
+      }
+    }
   }
 
   void _openQuickPayFromChat() {
@@ -1406,7 +1381,6 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -1417,7 +1391,7 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Start Payment',
+              'Start Payout',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
@@ -1447,7 +1421,8 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
               child: ElevatedButton.icon(
                 onPressed: () {
                   final value = amountController.text.trim();
-                  if (double.tryParse(value) == null) {
+                  final amount = double.tryParse(value);
+                  if (amount == null || amount <= 0) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Enter a valid payment amount.'),
@@ -1456,7 +1431,7 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
                     return;
                   }
                   Navigator.pop(ctx);
-                  _showBankSelection('₹$value');
+                  _processRealPayment(amount);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primary,
@@ -1477,44 +1452,6 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
         ),
       ),
     ).whenComplete(amountController.dispose);
-  }
-
-  void _proceedToPin(String amountStr, String accountName) {
-    push(
-      context,
-      PinEntryPage(
-        amount: amountStr,
-        orderId: 'TXN-${DateTime.now().millisecond}',
-      ),
-    ).then((success) {
-      if (success == true) {
-        final numericVal =
-            double.tryParse(
-              amountStr.replaceAll('₹', '').replaceAll(',', ''),
-            ) ??
-            0.0;
-        globalSellerTodayRevenue.value =
-            (globalSellerTodayRevenue.value - numericVal).clamp(0.0, 999999.0);
-        final id = 'pay-${DateTime.now().millisecondsSinceEpoch}';
-        setState(() {
-          for (final m in _messages) {
-            if (m['isSent'] == false) {
-              m['status'] = 'seen';
-            }
-          }
-          _messages.add({
-            'id': id,
-            'amount': amountStr,
-            'status': 'PAID',
-            'time': _timeNow(),
-            'isSent': true,
-            'type': 'payment',
-            'items': 'DukaanZone UPI Instant Payout ($accountName)',
-          });
-        });
-        _scrollToBottom();
-      }
-    });
   }
 
   void _triggerDeleteOptions(Map<String, dynamic> msg) {
@@ -1615,9 +1552,9 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
   void _handleSend() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-    final doubleVal = double.tryParse(text);
-    if (doubleVal != null) {
-      _showBankSelection('₹$text');
+    final amount = double.tryParse(text);
+    if (amount != null && amount > 0) {
+      _processRealPayment(amount);
     } else {
       _sendMessage(text);
     }
@@ -1809,7 +1746,7 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
       context: context,
       barrierColor: Colors.black87,
       builder: (ctx) => Dialog(
-        backgroundColor: Colors.white,
+  
         insetPadding: const EdgeInsets.all(18),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         child: _ChatProfilePreview(
@@ -1846,7 +1783,7 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
     final bool isSelectionModeActive = _selectedMessages.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+
       resizeToAvoidBottomInset: true,
       appBar: isSelectionModeActive
           ? AppBar(
@@ -1976,7 +1913,7 @@ class _SellerChatRoomPageState extends State<SellerChatRoomPage> {
               ],
             )
           : AppBar(
-              backgroundColor: Colors.white,
+        
               elevation: 0,
               surfaceTintColor: Colors.white,
               leadingWidth: 40,

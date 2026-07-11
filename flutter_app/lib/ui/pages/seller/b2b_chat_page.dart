@@ -420,7 +420,7 @@ class _B2BChatPageState extends State<B2BChatPage> {
   void _showMerchantOptions(BuildContext context, Map<String, dynamic> m) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1250,7 +1250,7 @@ class _B2BChatRoomPageState extends State<B2BChatRoomPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -1961,7 +1961,7 @@ class _B2BChatRoomPageState extends State<B2BChatRoomPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      backgroundColor: Colors.white,
+
       builder: (ctx) {
         final bool isGroup = widget.merchant['isGroup'] == true;
 
@@ -2253,7 +2253,7 @@ class _B2BChatRoomPageState extends State<B2BChatRoomPage> {
         isGroup && sendMessagesOnlyAdmins && !isUserAdmin;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+
       resizeToAvoidBottomInset: true,
 
       // WhatsApp Style Swap AppBar
@@ -2419,7 +2419,7 @@ class _B2BChatRoomPageState extends State<B2BChatRoomPage> {
             )
           : _isSearching
           ? AppBar(
-              backgroundColor: Colors.white,
+        
               elevation: 1,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back, color: ink),
@@ -2465,7 +2465,7 @@ class _B2BChatRoomPageState extends State<B2BChatRoomPage> {
               ),
             )
           : AppBar(
-              backgroundColor: Colors.white,
+        
               elevation: 0,
               surfaceTintColor: Colors.white,
               leadingWidth: 40,
