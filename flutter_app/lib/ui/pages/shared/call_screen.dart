@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
+import 'package:dukaan_zone_flutter/services/sound_web_bridge_stub.dart'
+    if (dart.library.html) 'package:dukaan_zone_flutter/services/sound_web_bridge_web.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Enum: call state machine
@@ -46,6 +49,9 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay>
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
+    // Start ringing sound
+    _startRingtone();
+
     // Auto-dismiss if caller cancels
     _callSub = liveSocketService.events.listen((event) {
       if (event.type == 'call.updated' &&
@@ -66,14 +72,28 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay>
     });
   }
 
+  void _startRingtone() {
+    if (kIsWeb) {
+      try { playRingtone(); } catch (_) {}
+    }
+  }
+
+  void _stopRingtone() {
+    if (kIsWeb) {
+      try { stopRingtone(); } catch (_) {}
+    }
+  }
+
   @override
   void dispose() {
+    _stopRingtone();
     _pulseCtrl.dispose();
     _callSub?.cancel();
     super.dispose();
   }
 
   void _accept() {
+    _stopRingtone();
     widget.onDismiss();
     liveSocketService.sendCallEnd(id: widget.callId, status: 'accepted');
     final ctx = navigatorKey.currentContext;
@@ -92,6 +112,7 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay>
   }
 
   void _decline() {
+    _stopRingtone();
     liveSocketService.sendCallEnd(id: widget.callId, status: 'declined');
     widget.onDismiss();
   }
@@ -233,7 +254,7 @@ class _CallAction extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────
-// GLOBAL NAVIGATOR KEY  (needed to push overlay from anywhere)
+// GLOBAL NAVIGATOR KEY
 // ─────────────────────────────────────────────────────────────
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -394,6 +415,11 @@ class _CallScreenState extends State<CallScreen> {
     });
   }
 
+  /// Agora channel IDs must only contain [a-zA-Z0-9_-] and max 64 chars.
+  String get _safeChannelId => widget.channelName
+      .replaceAll(RegExp(r'[^a-zA-Z0-9_\-]'), '_')
+      .substring(0, widget.channelName.length.clamp(0, 64));
+
   Future<void> _initAgora() async {
     try {
       final res = await apiClient.getJson(
@@ -402,10 +428,12 @@ class _CallScreenState extends State<CallScreen> {
       final token = res['token']?.toString() ?? '';
 
       if (appId.isEmpty) {
-        debugPrint('[CallScreen] Agora App ID empty — check AGORA_APP_ID env var');
+        debugPrint('[CallScreen] Agora App ID empty');
         if (mounted) setState(() => _callState = CallState.ended);
         return;
       }
+
+      debugPrint('[CallScreen] Joining channel: $_safeChannelId');
 
       _engine = createAgoraRtcEngine();
       await _engine!.initialize(RtcEngineContext(
@@ -415,11 +443,11 @@ class _CallScreenState extends State<CallScreen> {
 
       _engine!.registerEventHandler(RtcEngineEventHandler(
         onJoinChannelSuccess: (RtcConnection conn, int elapsed) {
-          debugPrint('[CallScreen] Local joined channel uid=${conn.localUid}');
+          debugPrint('[CallScreen] Joined uid=${conn.localUid}');
           if (mounted) setState(() => _callState = CallState.connecting);
         },
         onUserJoined: (RtcConnection conn, int remoteUid, int elapsed) {
-          debugPrint('[CallScreen] Remote user $remoteUid joined');
+          debugPrint('[CallScreen] Remote $remoteUid joined');
           if (mounted) {
             setState(() {
               _remoteUid = remoteUid;
@@ -431,30 +459,36 @@ class _CallScreenState extends State<CallScreen> {
         },
         onUserOffline: (RtcConnection conn, int remoteUid,
             UserOfflineReasonType reason) {
-          debugPrint('[CallScreen] Remote user $remoteUid left: $reason');
+          debugPrint('[CallScreen] Remote $remoteUid left: $reason');
           if (mounted) setState(() => _remoteUid = null);
           _endCall(status: 'ended');
         },
         onError: (ErrorCodeType code, String msg) {
-          debugPrint('[CallScreen] Agora error $code: $msg');
+          debugPrint('[CallScreen] Error $code: $msg');
         },
       ));
+
+      // Always enable audio (video calls need audio too)
+      await _engine!.enableAudio();
 
       if (widget.isVideo) {
         await _engine!.enableVideo();
         await _engine!.startPreview();
-      } else {
-        await _engine!.enableAudio();
+      }
+
+      if (!kIsWeb) {
         await _engine!.setEnableSpeakerphone(true);
       }
 
       await _engine!.joinChannel(
         token: token,
-        channelId: widget.channelName,
+        channelId: _safeChannelId,
         uid: 0,
-        options: const ChannelMediaOptions(
+        options: ChannelMediaOptions(
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
           channelProfile: ChannelProfileType.channelProfileCommunication,
+          publishMicrophoneTrack: true,
+          publishCameraTrack: widget.isVideo,
         ),
       );
     } catch (e) {
@@ -468,7 +502,7 @@ class _CallScreenState extends State<CallScreen> {
       await _engine?.leaveChannel();
       await _engine?.release();
     } catch (e) {
-      debugPrint('[CallScreen] Agora release error: $e');
+      debugPrint('[CallScreen] Agora release: $e');
     }
   }
 
@@ -509,7 +543,7 @@ class _CallScreenState extends State<CallScreen> {
 
   void _toggleSpeaker() {
     setState(() => _speakerOn = !_speakerOn);
-    _engine?.setEnableSpeakerphone(_speakerOn);
+    if (!kIsWeb) _engine?.setEnableSpeakerphone(_speakerOn);
   }
 
   String get _statusLabel {
@@ -549,12 +583,12 @@ class _CallScreenState extends State<CallScreen> {
                       rtcEngine: _engine!,
                       canvas: VideoCanvas(uid: _remoteUid),
                       connection:
-                          RtcConnection(channelId: widget.channelName),
+                          RtcConnection(channelId: _safeChannelId),
                     ),
                   ),
                 ),
 
-              // Avatar / status center (when no video or no remote)
+              // Avatar / status center
               if (!widget.isVideo || _remoteUid == null)
                 Positioned.fill(
                   child: Container(
@@ -571,7 +605,6 @@ class _CallScreenState extends State<CallScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Animated avatar
                         TweenAnimationBuilder<double>(
                           tween: Tween(begin: 0.95, end: 1.05),
                           duration: const Duration(milliseconds: 900),
@@ -619,9 +652,7 @@ class _CallScreenState extends State<CallScreen> {
                 ),
 
               // Local video PiP
-              if (widget.isVideo &&
-                  !_localVideoDisabled &&
-                  _engine != null)
+              if (widget.isVideo && !_localVideoDisabled && _engine != null)
                 Positioned(
                   right: 16,
                   top: 16,
@@ -655,7 +686,6 @@ class _CallScreenState extends State<CallScreen> {
                 bottom: 40,
                 child: Column(
                   children: [
-                    // Duration bar
                     if (_callState == CallState.active)
                       Container(
                         margin: const EdgeInsets.only(bottom: 16),
@@ -686,15 +716,12 @@ class _CallScreenState extends State<CallScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        // Mute
                         _ControlButton(
                           icon: _muted ? Icons.mic_off : Icons.mic,
                           label: _muted ? 'Unmute' : 'Mute',
                           color: _muted ? Colors.red : Colors.white,
                           onTap: _toggleMute,
                         ),
-
-                        // End call
                         GestureDetector(
                           onTap: () => _endCall(),
                           child: Column(
@@ -716,18 +743,14 @@ class _CallScreenState extends State<CallScreen> {
                             ],
                           ),
                         ),
-
-                        // Speaker / Video toggle
                         if (widget.isVideo)
                           _ControlButton(
                             icon: _localVideoDisabled
                                 ? Icons.videocam_off
                                 : Icons.videocam,
-                            label:
-                                _localVideoDisabled ? 'Cam Off' : 'Cam On',
-                            color: _localVideoDisabled
-                                ? Colors.red
-                                : Colors.white,
+                            label: _localVideoDisabled ? 'Cam Off' : 'Cam On',
+                            color:
+                                _localVideoDisabled ? Colors.red : Colors.white,
                             onTap: _toggleVideo,
                           )
                         else

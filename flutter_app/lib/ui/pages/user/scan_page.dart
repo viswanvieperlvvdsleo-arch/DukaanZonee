@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class UserScanPage extends StatefulWidget {
   const UserScanPage({super.key});
@@ -64,31 +65,43 @@ class _UserScanPageState extends State<UserScanPage> {
               alignment: Alignment.center,
               children: [
                 if (!_hasError)
-                  MobileScanner(
-                    controller: controller,
-                    onDetect: (capture) {
-                      final List<Barcode> barcodes = capture.barcodes;
-                      final rawValue = barcodes.isNotEmpty
-                          ? barcodes.first.rawValue
-                          : null;
-                      if (rawValue != null &&
-                          rawValue.isNotEmpty &&
-                          !_handledScan) {
-                        _resolvePaymentQr(rawValue);
+                  VisibilityDetector(
+                    key: const Key('user_scanner_visibility'),
+                    onVisibilityChanged: (info) {
+                      if (info.visibleFraction == 0) {
+                        controller.stop();
+                      } else {
+                        controller.start();
                       }
                     },
-                    errorBuilder: (context, error) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (!mounted) return;
-                        setState(() {
-                          _hasError = true;
-                          _errorMessage = error.errorCode.name.isNotEmpty
-                              ? error.errorCode.name
-                              : 'Camera access failed';
+                    child: MobileScanner(
+                      controller: controller,
+                      onDetect: (capture) {
+                        final List<Barcode> barcodes = capture.barcodes;
+                        final rawValue = barcodes.isNotEmpty
+                            ? barcodes.first.rawValue
+                            : null;
+                        if (rawValue != null &&
+                            rawValue.isNotEmpty &&
+                            !_handledScan) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _resolvePaymentQr(rawValue);
+                          });
+                        }
+                      },
+                      errorBuilder: (context, error) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          setState(() {
+                            _hasError = true;
+                            _errorMessage = error.errorCode.name.isNotEmpty
+                                ? error.errorCode.name
+                                : 'Camera access failed';
+                          });
                         });
-                      });
-                      return _buildErrorState();
-                    },
+                        return _buildErrorState();
+                      },
+                    ),
                   )
                 else
                   _buildErrorState(),

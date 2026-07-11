@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 class SellerScanPage extends StatefulWidget {
   const SellerScanPage({super.key});
@@ -43,32 +44,46 @@ class _SellerScanPageState extends State<SellerScanPage> {
               alignment: Alignment.center,
               children: [
                 if (!_hasError)
-                  MobileScanner(
-                    controller: controller,
-                    onDetect: (capture) {
-                      final barcodes = capture.barcodes;
-                      if (barcodes.isEmpty) return;
-                      final value = barcodes.first.rawValue?.trim();
-                      if (value == null ||
-                          value.isEmpty ||
-                          value == _lastScan) {
-                        return;
+                  VisibilityDetector(
+                    key: const Key('seller_scanner_visibility'),
+                    onVisibilityChanged: (info) {
+                      if (info.visibleFraction == 0) {
+                        controller.stop();
+                      } else {
+                        controller.start();
                       }
-                      setState(() => _lastScan = value);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'QR detected. Buyer/invoice lookup will use backend records here.',
-                          ),
-                        ),
-                      );
                     },
-                    errorBuilder: (context, error) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (mounted) setState(() => _hasError = true);
-                      });
-                      return _buildErrorState();
-                    },
+                    child: MobileScanner(
+                      controller: controller,
+                      onDetect: (capture) {
+                        final barcodes = capture.barcodes;
+                        if (barcodes.isEmpty) return;
+                        final value = barcodes.first.rawValue?.trim();
+                        if (value == null ||
+                            value.isEmpty ||
+                            value == _lastScan) {
+                          return;
+                        }
+                        
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          setState(() => _lastScan = value);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'QR detected. Buyer/invoice lookup will use backend records here.',
+                              ),
+                            ),
+                          );
+                        });
+                      },
+                      errorBuilder: (context, error) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) setState(() => _hasError = true);
+                        });
+                        return _buildErrorState();
+                      },
+                    ),
                   )
                 else
                   _buildErrorState(),

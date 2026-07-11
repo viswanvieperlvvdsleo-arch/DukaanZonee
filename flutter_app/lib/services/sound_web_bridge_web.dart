@@ -74,3 +74,19 @@ bool playWebSynth(String tone) {
     return false;
   }
 }
+
+void playRingtone() {
+  try {
+    js.context.callMethod('startRingtone', []);
+  } catch (e) {
+    // ignore
+  }
+}
+
+void stopRingtone() {
+  try {
+    js.context.callMethod('stopRingtone', []);
+  } catch (e) {
+    // ignore
+  }
+}
