@@ -3,8 +3,15 @@ import 'package:flutter/services.dart';
 import 'package:dukaan_zone_flutter/dukaan.dart';
 import 'package:dukaan_zone_flutter/ui/pages/shared/call_screen.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase init failed (expected if web/desktop without options): $e');
+  }
   await soundService.init();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
